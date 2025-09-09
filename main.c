@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <netinet/in.h>
+#include <stdio.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -10,7 +10,7 @@
 void socketListen() {
     struct sockaddr_in server_sockaddr_in;
 
-    const int port = 8080;
+    const int port = 8081;
 
     server_sockaddr_in.sin_family = AF_INET;
     server_sockaddr_in.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -20,19 +20,22 @@ void socketListen() {
 
     bind(socket_file_descriptor, (struct sockaddr *)&server_sockaddr_in, sizeof(server_sockaddr_in));
 
-    listen(socket_file_descriptor, MAX_QUEUED_REQUESTS);
+    while (1) {
+        listen(socket_file_descriptor, MAX_QUEUED_REQUESTS);
 
-    int connection_file_descriptor = accept(socket_file_descriptor, NULL, 0);
+        int connection_file_descriptor =
+            accept(socket_file_descriptor, NULL, 0);
 
-    char buffer[MAX_MESSAGE_SIZE] = {};
+        char buffer[MAX_MESSAGE_SIZE] = {};
 
-    read(connection_file_descriptor, buffer, sizeof(buffer));
-    printf("%s", buffer);
+        read(connection_file_descriptor, buffer, sizeof(buffer));
+        printf("%s", buffer);
 
-    char status = 0;
-    write(connection_file_descriptor, &status, sizeof(status));
+        char status = 'I';
+        write(connection_file_descriptor, &status, sizeof(status));
 
-    close(connection_file_descriptor);
+        close(connection_file_descriptor);
+    }
 }
 
 void getLines(FILE *fileptr) {
