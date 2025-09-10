@@ -49,9 +49,9 @@ int netify_connection_accept(int socketfd) {
 int netify_connection_read(int connectionfd, char *req_buffer, int req_buffer_len) {
     int result = read(connectionfd, req_buffer, req_buffer_len);
     if (result == -1) {
-        printf("NETIFY::ERROR::Socket read failed.\n");
+        printf("NETIFY::ERROR::Connection read failed.\n");
     } else if (result == 0) {
-        printf("NETIFY::INFO::Socket read successfully.\n");
+        printf("NETIFY::INFO::Connection read successfully.\n");
     }
 
     return result;
