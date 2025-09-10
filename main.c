@@ -1,5 +1,6 @@
 #include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -7,10 +8,31 @@
 #define MAX_MESSAGE_SIZE 512
 #define MAX_QUEUED_REQUESTS 5
 
-void socketListen() {
-    struct sockaddr_in server_sockaddr_in;
+int netify_bind_socket(int port);
+char *netify_listen_socket(int socketfd, char *buffer, int buffer_len);
 
-    const int port = 8081;
+int main() {
+    int socketfd = netify_bind_socket(8080);
+    if (socketfd == -1) {
+        return 0;
+    }
+
+    int request_buffer_len = sizeof(char) * MAX_MESSAGE_SIZE;
+    char *request_buffer = (char *)malloc(request_buffer_len);
+    while (1) {
+        request_buffer =
+            netify_listen_socket(socketfd, request_buffer, request_buffer_len);
+
+        printf("%s\n", request_buffer);
+    }
+
+    close(socketfd);
+
+    return 0;
+}
+
+int netify_bind_socket(int port) {
+    struct sockaddr_in server_sockaddr_in;
 
     server_sockaddr_in.sin_family = AF_INET;
     server_sockaddr_in.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -18,70 +40,37 @@ void socketListen() {
 
     int socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0);
 
-    bind(socket_file_descriptor, (struct sockaddr *)&server_sockaddr_in, sizeof(server_sockaddr_in));
+    int result =
+        bind(socket_file_descriptor, (struct sockaddr *)&server_sockaddr_in,
+             sizeof(server_sockaddr_in));
 
-    while (1) {
-        listen(socket_file_descriptor, MAX_QUEUED_REQUESTS);
+    if (result == -1) {
+        printf("NETIFY::ERROR::Socket bind failed.\n");
 
-        int connection_file_descriptor =
-            accept(socket_file_descriptor, NULL, 0);
-
-        char buffer[MAX_MESSAGE_SIZE] = {};
-
-        read(connection_file_descriptor, buffer, sizeof(buffer));
-        printf("%s", buffer);
-
-        char status = 'I';
-        write(connection_file_descriptor, &status, sizeof(status));
-
-        close(connection_file_descriptor);
+        return -1;
+    } else {
+        printf("NETIFY::INFO::Socket binded successfully.\n");
     }
+
+    return socket_file_descriptor;
 }
 
-void getLines(FILE *fileptr) {
-    char letter;
-    int byteCount = 0, lineCount = 0;
-    char byte[9];
-    char line[100];
-    while (1) {
-        letter = getc(fileptr);
-        if (letter == EOF) {
-            break;
-        }
+char *netify_listen_socket(int socketfd, char *buffer, int buffer_len) {
+    listen(socketfd, MAX_QUEUED_REQUESTS);
 
-        if (letter != '\n') {
-            byte[byteCount++] = letter;
-        }
+    int connection_file_descriptor = accept(socketfd, NULL, 0);
 
-        if (byteCount == 8) {
-            int i;
-            for (i = 0; i < 8; i++) {
-                line[lineCount++] = byte[i];
-            }
-
-            byteCount = 0;
-        }
-
-        if (letter == '\n') {
-            int i;
-            for (i = 0; i < byteCount; i++) {
-                line[lineCount++] = byte[i];
-            }
-
-            byteCount = 0;
-
-            line[lineCount] = '\0';
-            printf("read: %s\n", line);
-            lineCount = 0;
-        }
+    int result = read(connection_file_descriptor, buffer, buffer_len);
+    if (result == -1) {
+        printf("NETIFY::ERROR::Socket read failed.\n");
+    } else if (result == 0) {
+        printf("NETIFY::INFO::Socket read successfully.\n");
     }
-}
 
-int main() {
-    socketListen();
-    // FILE *fileptr = fopen("./messages.txt", "r");
-    // getLines(fileptr);
-    // fclose(fileptr);
+    char status[] = { 'H','e','l','l','o',' ','W','o','r','l','d','!','\n' };
+    write(connection_file_descriptor, &status, sizeof(status));
 
-    return 0;
+    close(connection_file_descriptor);
+
+    return buffer;
 }
