@@ -30,26 +30,47 @@ int netify_socket_bind(int port) {
 
 int netify_socket_close(int socketfd) {
     close(socketfd);
+    printf("NETIFY::INFO::Successfuly closed socket.\n");
 
     return 0;
 }
 
-char *netify_listen_socket(int socketfd, char *buffer, int buffer_len) {
-    listen(socketfd, NETIFY_MAX_QUEUED_REQUEST_COUNT);
+int netify_connection_accept(int socketfd) {
+    int result = listen(socketfd, NETIFY_MAX_QUEUED_REQUEST_COUNT);
+    if (result == -1) {
+        printf("NETIFY::ERROR::Failed to establish connection.\n");
+    } else if (result == 0) {
+        printf("NETIFY::INFO::Connection established successfully.\n");
+    }
 
-    int connection_file_descriptor = accept(socketfd, NULL, 0);
+    return accept(socketfd, NULL, 0);
+}
 
-    int result = read(connection_file_descriptor, buffer, buffer_len);
+int netify_connection_read(int connectionfd, char *req_buffer, int req_buffer_len) {
+    int result = read(connectionfd, req_buffer, req_buffer_len);
     if (result == -1) {
         printf("NETIFY::ERROR::Socket read failed.\n");
     } else if (result == 0) {
         printf("NETIFY::INFO::Socket read successfully.\n");
     }
 
-    char status[] = { 'H','e','l','l','o',' ','W','o','r','l','d','!','\n' };
-    write(connection_file_descriptor, &status, sizeof(status));
+    return result;
+}
 
-    close(connection_file_descriptor);
+int netify_connection_write(int connectionfd, char *res_buffer, int res_buffer_len) {
+    int result = write(connectionfd, res_buffer, res_buffer_len);
+    if (result == -1) {
+        printf("NETIFY::ERROR::Failed to write to connection.\n");
+    } else if (result > 0) {
+        printf("NETIFY::INFO::Successfuly written to connection.\n");
+    }
 
-    return buffer;
+    return result;
+}
+
+int netify_connection_close(int connectionfd) {
+    close(connectionfd);
+    printf("NETIFY::INFO::Successfuly closed connection.\n");
+
+    return 0;
 }
