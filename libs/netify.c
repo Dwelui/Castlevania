@@ -130,7 +130,7 @@ int netify_response_send(int connectionfd, int status_code,
         res_buffer[j] = message_buffer[i];
     }
 
-    printf("NETIFY::INFO::Sending response with %d bytes.\n", res_buffer_len);
+    printf("NETIFY::INFO::Sending response with %d bytes. Response:\n%s\n", res_buffer_len, res_buffer);
 
     return netify_connection_write(connectionfd, res_buffer, res_buffer_len);
 }
