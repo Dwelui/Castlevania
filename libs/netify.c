@@ -6,6 +6,21 @@
 #include <string.h>
 #include <unistd.h>
 
+const char *http_status_to_string(int code) {
+    switch (code) {
+        case 200: return "OK";
+        case 201: return "Created";
+        case 204: return "No Content";
+        case 400: return "Bad Request";
+        case 401: return "Unauthorized";
+        case 403: return "Forbidden";
+        case 404: return "Not Found";
+        case 500: return "Internal Server Error";
+        case 501: return "Not Implemented";
+        default:  return "Unknown Status";
+    }
+}
+
 int netify_socket_bind(int port) {
     struct sockaddr_in server_sockaddr_in;
 
@@ -79,15 +94,17 @@ int netify_connection_close(int connectionfd) {
     return 0;
 }
 
-// TODO:
-// - Add validation for len parameters;
-// - Generate status_code depending on passed status code;
-// - Add correct amount of new lines (after status_code line, after headers)
-// - Create Status Code constants and mapping to names.
+/*
+TODO:
+- Add validation for len parameters;
+- Add correct amount of new lines (after status_code line, after headers)
+*/
 int netify_response_send(int connectionfd, int status_code,
                          char *headers_buffer, int headers_buffer_len,
                          char *message_buffer, int message_buffer_len) {
-    char status_code_buffer[] = "HTTP/1.1 200 OK";
+
+    char status_code_buffer[20];
+    sprintf(status_code_buffer, "HTTP/1.1 %d %s\n", status_code, http_status_to_string(status_code));
     int status_code_buffer_len = strlen(status_code_buffer);
 
     int message_padding_len = 2;

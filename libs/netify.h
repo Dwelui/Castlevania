@@ -4,6 +4,22 @@
 #define NETIFY_MAX_MESSAGE_SIZE 512
 #define NETIFY_MAX_QUEUED_REQUEST_COUNT 5
 
+enum HttpStatus {
+    HTTP_OK = 200,
+    HTTP_CREATED = 201,
+    HTTP_NO_CONTENT = 204,
+
+    HTTP_BAD_REQUEST = 400,
+    HTTP_UNAUTHORIZED = 401,
+    HTTP_FORBIDDEN = 403,
+    HTTP_NOT_FOUND = 404,
+
+    HTTP_INTERNAL_SERVER_ERROR = 500,
+    HTTP_NOT_IMPLEMENTED = 501,
+    HTTP_BAD_GATEWAY = 502,
+    HTTP_SERVICE_UNAVAILABLE = 503
+};
+
 /* Creates TCP socket and binds to provided port. Returns listening fd on success and -1 on error. */
 int netify_socket_bind(int port);
 /* Closes TCP socket. */

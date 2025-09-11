@@ -5,7 +5,7 @@
 #include <string.h>
 
 int main() {
-    int socketfd = netify_socket_bind(8080);
+    int socketfd = netify_socket_bind(8081);
     if (socketfd == -1) {
         return 0;
     }
@@ -14,6 +14,7 @@ int main() {
         buffer_len = sizeof(char) * NETIFY_MAX_MESSAGE_SIZE;
     char *req_buffer = (char *)malloc(buffer_len);
     char message_buffer[] = "Hello World!";
+    enum HttpStatus status = HTTP_OK;
 
     while (1) {
         connectionfd = netify_connection_accept(socketfd);
@@ -25,7 +26,7 @@ int main() {
 
         printf("%s", req_buffer);
 
-        result = netify_response_send(connectionfd, 200, "", 0, message_buffer, strlen(message_buffer));
+        result = netify_response_send(connectionfd, status, "", 0, message_buffer, strlen(message_buffer));
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
