@@ -2,9 +2,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int main() {
-    int socketfd = netify_socket_bind(8081);
+    int socketfd = netify_socket_bind(8080);
     if (socketfd == -1) {
         return 0;
     }
@@ -12,8 +13,7 @@ int main() {
     int result, connectionfd,
         buffer_len = sizeof(char) * NETIFY_MAX_MESSAGE_SIZE;
     char *req_buffer = (char *)malloc(buffer_len);
-    char *res_buffer = (char *)malloc(buffer_len);
-    res_buffer = "Hello World!";
+    char message_buffer[] = "Hello World!";
 
     while (1) {
         connectionfd = netify_connection_accept(socketfd);
@@ -25,7 +25,7 @@ int main() {
 
         printf("%s", req_buffer);
 
-        result = netify_connection_write(connectionfd, res_buffer, 11);
+        result = netify_response_send(connectionfd, 200, "", 0, message_buffer, strlen(message_buffer));
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
