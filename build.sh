@@ -1,1 +1,1 @@
-gcc -std=c89 -Wall -Wextra -O2 main.c libs/netify.c -o main
+gcc -std=c89 -Wall -Wextra -O2 main.c libs/netify.c libs/logify.c -o main

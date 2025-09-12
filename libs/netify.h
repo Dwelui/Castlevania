@@ -1,6 +1,8 @@
 #ifndef NETIFY_H
 #define NETIFY_H
 
+#include <netinet/in.h>
+
 #define NETIFY_MAX_MESSAGE_SIZE 512
 #define NETIFY_MAX_QUEUED_REQUEST_COUNT 5
 
@@ -26,7 +28,7 @@ int netify_socket_bind(int port);
 int netify_socket_close(int socketfd);
 
 /* Starts listening and on connection request returns connection fd */
-int netify_connection_accept(int socketfd);
+int netify_connection_accept(int socketfd, struct sockaddr_in *client_sockaddr_in, socklen_t *client_sockaddr_in_len);
 /* Reads into req_buffer from connection fd. Returns -1 on error and 0 on success. */
 int netify_connection_read(int connectionfd, char *req_buffer, int req_buffer_len);
 /* Writes from res_buffer to connection fd. Returns -1 on error and 0 on success. */

@@ -1,11 +1,13 @@
 #include "libs/netify.h"
 
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 
 int main() {
-    int socketfd = netify_socket_bind(8081);
+    int socketfd = netify_socket_bind(8080);
     if (socketfd == -1) {
         return 0;
     }
@@ -17,7 +19,15 @@ int main() {
     enum HttpStatus status = HTTP_OK;
 
     while (1) {
-        connectionfd = netify_connection_accept(socketfd);
+        struct sockaddr_in client_sockaddr_in;
+        socklen_t client_sockaddr_in_len = sizeof(client_sockaddr_in);
+
+        connectionfd = netify_connection_accept(socketfd, &client_sockaddr_in,
+                                                &client_sockaddr_in_len);
+        if (connectionfd == -1) {
+            break;
+        }
+
         result = netify_connection_read(connectionfd, req_buffer, buffer_len);
         if (result == -1) {
             netify_connection_close(connectionfd);
@@ -26,7 +36,8 @@ int main() {
 
         printf("%s", req_buffer);
 
-        result = netify_response_send(connectionfd, status, "", 0, message_buffer, strlen(message_buffer));
+        result = netify_response_send(connectionfd, status, "", 0,
+                                      message_buffer, strlen(message_buffer));
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
