@@ -1,9 +1,8 @@
+#include "libs/logify.h"
 #include "libs/netify.h"
 
 #include <netinet/in.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/socket.h>
 
 int main() {
@@ -12,10 +11,18 @@ int main() {
         return 0;
     }
 
-    int result, connectionfd, buffer_len = sizeof(char) * NETIFY_MAX_MESSAGE_SIZE;
-    char *req_buffer = (char *)malloc(buffer_len);
+    int result, connectionfd;
+
+    unsigned int req_resouce_buf_len = sizeof(char) * NETIFY_MAX_RESOURCE_SIZE;
+    char *req_resource_buf = (char *)malloc(req_resouce_buf_len);
+
+    unsigned int req_header_buf_len = sizeof(char) * NETIFY_MAX_HEADER_SIZE;
+    char *req_header_buf = (char *)malloc(req_header_buf_len);
+
+    unsigned int req_body_buf_len = sizeof(char) * NETIFY_MAX_BODY_SIZE;
+    char *req_body_buf = (char *)malloc(req_body_buf_len);
+
     char message_buffer[] = "Hello World!";
-    enum HttpStatus status = HTTP_OK;
 
     while (1) {
         struct sockaddr_in client_sockaddr_in;
@@ -26,15 +33,16 @@ int main() {
             break;
         }
 
-        result = netify_connection_read(connectionfd, req_buffer, buffer_len);
+        result = netify_request_read(connectionfd, req_resource_buf, req_resouce_buf_len, req_header_buf, req_header_buf_len,
+                                     req_body_buf, req_body_buf_len);
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
         }
 
-        printf("%s", req_buffer);
+        logify_log(INFO, "REQUEST\nresource:\n%s\nheader:\n%s\nbody:\n%s", req_resource_buf, req_header_buf, req_body_buf);
 
-        result = netify_response_send(connectionfd, status, "", 0, message_buffer, strlen(message_buffer));
+        result = netify_response_send(connectionfd, HTTP_OK, "", 0, message_buffer, sizeof(message_buffer));
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
@@ -44,7 +52,7 @@ int main() {
     }
 
     netify_socket_close(socketfd);
-    free(req_buffer);
+    free(req_body_buf);
 
     return 0;
 }

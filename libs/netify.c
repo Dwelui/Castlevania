@@ -46,7 +46,7 @@ int netify_socket_bind(int port) {
     int result = bind(socket_file_descriptor, (struct sockaddr *)&server_sockaddr_in, sizeof(server_sockaddr_in));
 
     if (result == -1) {
-        logify_log(ERROR, "NETIFY::Socket bind failed.");
+        logify_log(ERROR, "NETIFY::Socket bind failed for port: %d.", port);
         return -1;
     } else {
         logify_log(INFO, "NETIFY::Socket binded successfully on port: %d.", port);
@@ -87,8 +87,8 @@ int netify_connection_accept(int socketfd, struct sockaddr_in *client_sockaddr_i
     return result;
 }
 
-int netify_connection_read(int connectionfd, char *req_buffer, int req_buffer_len) {
-    int result = read(connectionfd, req_buffer, req_buffer_len);
+int netify_connection_read(int connectionfd, char *buffer, int buffer_len) {
+    int result = read(connectionfd, buffer, buffer_len);
     if (result == -1) {
         logify_log(ERROR, "NETIFY::Connection read failed.");
     } else if (result == 0) {
@@ -98,8 +98,8 @@ int netify_connection_read(int connectionfd, char *req_buffer, int req_buffer_le
     return result;
 }
 
-int netify_connection_write(int connectionfd, char *res_buffer, int res_buffer_len) {
-    int result = write(connectionfd, res_buffer, res_buffer_len);
+int netify_connection_write(int connectionfd, char *buffer, int buffer_len) {
+    int result = write(connectionfd, buffer, buffer_len);
     if (result == -1) {
         logify_log(ERROR, "NETIFY::Failed to write to connection.");
     } else if (result > 0) {
@@ -117,18 +117,74 @@ int netify_connection_close(int connectionfd) {
     return 0;
 }
 
+int netify_request_read(int connectionfd,
+                        char *resource_buf,
+                        unsigned int resource_buf_len,
+                        char *header_buf,
+                        unsigned int header_buf_len,
+                        char *body_buf,
+                        unsigned int body_buf_len) {
+    unsigned int req_buf_len =
+        NETIFY_MAX_RESOURCE_SIZE + NETIFY_MAX_HEADER_SIZE + NETIFY_MAX_BODY_SIZE + 3; /* added padding for look ahead check. */
+    char *req_buf = (char *)malloc(req_buf_len);
+
+    int result = netify_connection_read(connectionfd, req_buf, req_buf_len);
+    if (result == -1) {
+        return -1;
+    }
+
+    unsigned int i, resource_idx = 0, header_idx = 0, body_idx = 0, line_count = 0;
+    unsigned short request_part = 1; /* 1 - resource, 2 - header, 3 - body */
+    for (i = 0; i < req_buf_len; i++) {
+        if (req_buf[i] == '\r' && req_buf[i + 1] == '\n' && req_buf[i + 2] == '\r' && req_buf[i + 3] == '\n') {
+            request_part = 3;
+            i += 3;
+            line_count++;
+        } else if (req_buf[i] == '\r' && req_buf[i + 1] == '\n') {
+            request_part = request_part > 2 ? request_part : 2;
+            i++;
+            line_count++;
+        } else if ((int)req_buf[i] == 0) {
+            body_idx--;
+            break;
+        }
+
+        if (request_part == 1 && resource_idx < resource_buf_len) {
+            resource_buf[resource_idx++] = req_buf[i];
+        }
+
+        if (request_part == 2 && header_idx < header_buf_len) {
+            if (header_idx == 0 && req_buf[i] == '\n')
+                continue;
+            header_buf[header_idx++] = req_buf[i];
+        }
+
+        if (request_part == 3 && body_idx < body_buf_len) {
+            if (body_idx == 0 && req_buf[i] == '\n')
+                continue;
+            body_buf[body_idx++] = req_buf[i];
+        }
+    }
+
+    resource_buf[resource_idx] = '\0';
+    header_buf[header_idx] = '\0';
+    body_buf[body_idx] = '\0';
+
+    resource_buf_len = resource_idx;
+    header_buf_len = header_idx;
+    body_buf_len = body_idx;
+
+    return result;
+}
+
 /*
     TODO:
     - Add validation for len parameters;
     - Add correct amount of new lines (after status_code line, after headers)
+    - Fix new line to \r\n instead of \n
 */
-int netify_response_send(int connectionfd,
-                         int status_code,
-                         char *headers_buffer,
-                         int headers_buffer_len,
-                         char *message_buffer,
-                         int message_buffer_len) {
-
+int netify_response_send(
+    int connectionfd, int status_code, char *headers_buffer, int headers_buffer_len, char *message_buffer, int message_buffer_len) {
     char status_code_buffer[20];
     sprintf(status_code_buffer, "HTTP/1.1 %d %s\n", status_code, http_status_to_string(status_code));
     int status_code_buffer_len = strlen(status_code_buffer);

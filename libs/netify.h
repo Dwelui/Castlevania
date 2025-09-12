@@ -3,6 +3,9 @@
 
 #include <netinet/in.h>
 
+#define NETIFY_MAX_RESOURCE_SIZE 256
+#define NETIFY_MAX_HEADER_SIZE 1024
+#define NETIFY_MAX_BODY_SIZE 2048
 #define NETIFY_MAX_MESSAGE_SIZE 512
 #define NETIFY_MAX_QUEUED_REQUEST_COUNT 5
 
@@ -22,26 +25,36 @@ enum HttpStatus {
     HTTP_SERVICE_UNAVAILABLE = 503
 };
 
-/* Creates TCP socket and binds to provided port. Returns listening fd on success and -1 on error. */
+enum HttpMethod { METHOD_GET = 1, METHOD_POST = 2 };
+
+/* Creates TCP socket and binds to provided port. Returns listening fd on
+ * success and -1 on error. */
 int netify_socket_bind(int port);
 /* Closes TCP socket. */
 int netify_socket_close(int socketfd);
 
 /* Starts listening and on connection request returns connection fd */
 int netify_connection_accept(int socketfd, struct sockaddr_in *client_sockaddr_in, socklen_t *client_sockaddr_in_len);
-/* Reads into req_buffer from connection fd. Returns -1 on error and 0 on success. */
-int netify_connection_read(int connectionfd, char *req_buffer, int req_buffer_len);
-/* Writes from res_buffer to connection fd. Returns -1 on error and 0 on success. */
-int netify_connection_write(int connectionfd, char *res_buffer, int res_buffer_len);
+/* Reads into buffer from connection fd. Returns -1 on error and 0 on success.
+ */
+int netify_connection_read(int connectionfd, char *buffer, int buffer_len);
+/* Writes from buffer to connection fd. Returns -1 on error and 0 on success. */
+int netify_connection_write(int connectionfd, char *buffer, int buffer_len);
 /* Closes connection fd. Retuns 0 on success. */
 int netify_connection_close(int connectionfd);
 
 /* Sends response to connection fd. Returns -1 on error and 0 on success. */
-int netify_response_send(int connectionfd,
-                         int status_code,
-                         char *headers_buffer,
-                         int headers_buffer_len,
-                         char *message_buffer,
-                         int message_buffer_len);
+int netify_response_send(
+    int connectionfd, int status_code, char *headers_buffer, int headers_buffer_len, char *message_buffer, int message_buffer_len);
+
+/* Reads a request resource, headers, body into resource_buf, header_buf and body_buf respectivly.
+ * Returns -1 on error. */
+int netify_request_read(int connectionfd,
+                        char *resource_buf,
+                        unsigned int resource_buf_len,
+                        char *header_buf,
+                        unsigned int header_buf_len,
+                        char *body_buf,
+                        unsigned int body_buf_len);
 
 #endif
