@@ -12,8 +12,7 @@ int main() {
         return 0;
     }
 
-    int result, connectionfd,
-        buffer_len = sizeof(char) * NETIFY_MAX_MESSAGE_SIZE;
+    int result, connectionfd, buffer_len = sizeof(char) * NETIFY_MAX_MESSAGE_SIZE;
     char *req_buffer = (char *)malloc(buffer_len);
     char message_buffer[] = "Hello World!";
     enum HttpStatus status = HTTP_OK;
@@ -22,8 +21,7 @@ int main() {
         struct sockaddr_in client_sockaddr_in;
         socklen_t client_sockaddr_in_len = sizeof(client_sockaddr_in);
 
-        connectionfd = netify_connection_accept(socketfd, &client_sockaddr_in,
-                                                &client_sockaddr_in_len);
+        connectionfd = netify_connection_accept(socketfd, &client_sockaddr_in, &client_sockaddr_in_len);
         if (connectionfd == -1) {
             break;
         }
@@ -36,8 +34,7 @@ int main() {
 
         printf("%s", req_buffer);
 
-        result = netify_response_send(connectionfd, status, "", 0,
-                                      message_buffer, strlen(message_buffer));
+        result = netify_response_send(connectionfd, status, "", 0, message_buffer, strlen(message_buffer));
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;

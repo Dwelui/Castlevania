@@ -37,6 +37,11 @@ int netify_connection_write(int connectionfd, char *res_buffer, int res_buffer_l
 int netify_connection_close(int connectionfd);
 
 /* Sends response to connection fd. Returns -1 on error and 0 on success. */
-int netify_response_send(int connectionfd, int status_code, char *headers_buffer, int headers_buffer_len, char *message_buffer, int message_buffer_len);
+int netify_response_send(int connectionfd,
+                         int status_code,
+                         char *headers_buffer,
+                         int headers_buffer_len,
+                         char *message_buffer,
+                         int message_buffer_len);
 
 #endif

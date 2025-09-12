@@ -1,7 +1,7 @@
 #include "logify.h"
 
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
 
