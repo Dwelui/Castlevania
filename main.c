@@ -2,6 +2,7 @@
 #include "libs/netify.h"
 
 #include <netinet/in.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 
@@ -22,7 +23,7 @@ int main() {
     unsigned int req_body_buf_len = sizeof(char) * NETIFY_MAX_BODY_SIZE;
     char *req_body_buf = (char *)malloc(req_body_buf_len);
 
-    char message_buffer[] = "Hello World!";
+    char *res_body_buf = (char *)malloc(sizeof(char) * NETIFY_MAX_BODY_SIZE);
 
     while (1) {
         struct sockaddr_in client_sockaddr_in;
@@ -44,7 +45,8 @@ int main() {
 
         char *req_header_computer_name_buf = netify_request_header_get("x-computer-name", req_header_buf);
 
-        result = netify_response_send(connectionfd, HTTP_OK, "", message_buffer);
+        sprintf(res_body_buf, "Hello %s!", req_header_computer_name_buf);
+        result = netify_response_send(connectionfd, HTTP_OK, "", res_body_buf);
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;

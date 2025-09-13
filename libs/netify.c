@@ -205,40 +205,38 @@ char *netify_request_header_get(char *target_buf, char *header_buf) {
     return result_buf;
 }
 
-/*
-    TODO:
-    - Add validation for len parameters;
-    - Add correct amount of new lines (after status_code line, after headers)
-    - Fix new line to \r\n instead of \n (dump each symbol sent and check ascii codes, make sure every line ends with \r\n)
-*/
 int netify_response_send(int connectionfd, int status_code, char *headers_buf, char *body_buf) {
     char status_code_buffer[20];
-    sprintf(status_code_buffer, "HTTP/1.1 %d %s\n", status_code, http_status_to_string(status_code));
+    sprintf(status_code_buffer, "HTTP/1.1 %d %s\r\n", status_code, http_status_to_string(status_code));
 
-    int message_padding_len = 4;
+    /* Padding for header and body gap aswell as last LF at the end of body*/
+    int message_padding_len = 5;
 
-    int res_buffer_len = strlen(status_code_buffer) + strlen(headers_buf) + message_padding_len + strlen(body_buf);
-    char *res_buffer = (char *)malloc(res_buffer_len);
+    int res_buf_len = strlen(status_code_buffer) + strlen(headers_buf) + message_padding_len + strlen(body_buf);
+    char *res_buf = (char *)malloc(res_buf_len);
     int i, j = 0;
 
     for (i = 0; status_code_buffer[i] != '\0'; i++, j++) {
-        res_buffer[j] = status_code_buffer[i];
+        res_buf[j] = status_code_buffer[i];
     }
 
     for (i = 0; headers_buf[i] != '\0'; i++, j++) {
-        res_buffer[j] = headers_buf[i];
+        res_buf[j] = headers_buf[i];
     }
 
     for (i = 0; i < message_padding_len / 2; i++) {
-        res_buffer[j++] = '\r';
-        res_buffer[j++] = '\n';
+        res_buf[j++] = '\r';
+        res_buf[j++] = '\n';
     }
 
     for (i = 0; body_buf[i] != '\0'; i++, j++) {
-        res_buffer[j] = body_buf[i];
+        res_buf[j] = body_buf[i];
     }
 
-    logify_log(INFO, "NETIFY::INFO::Sending response with %d bytes. Response:\n%s\n", res_buffer_len, res_buffer);
+    res_buf[j++] = '\n';
+    res_buf[j] = '\0';
 
-    return netify_connection_write(connectionfd, res_buffer, res_buffer_len);
+    logify_log(INFO, "NETIFY::INFO::Sending response with %d bytes. Response:\n%s\n", res_buf_len, res_buf);
+
+    return netify_connection_write(connectionfd, res_buf, res_buf_len);
 }
