@@ -5,6 +5,7 @@
 
 #define NETIFY_MAX_RESOURCE_SIZE 256
 #define NETIFY_MAX_HEADER_SIZE 1024
+#define NETIFY_MAX_HEADER_SINGLE_SIZE 256
 #define NETIFY_MAX_BODY_SIZE 2048
 #define NETIFY_MAX_MESSAGE_SIZE 512
 #define NETIFY_MAX_QUEUED_REQUEST_COUNT 5
@@ -44,8 +45,7 @@ int netify_connection_write(int connectionfd, char *buffer, int buffer_len);
 int netify_connection_close(int connectionfd);
 
 /* Sends response to connection fd. Returns -1 on error and 0 on success. */
-int netify_response_send(
-    int connectionfd, int status_code, char *headers_buffer, int headers_buffer_len, char *message_buffer, int message_buffer_len);
+int netify_response_send(int connectionfd, int status_code, char *headers_buf, char *body_buf);
 
 /* Reads a request resource, headers, body into resource_buf, header_buf and body_buf respectivly.
  * Returns -1 on error. */
@@ -56,5 +56,8 @@ int netify_request_read(int connectionfd,
                         unsigned int header_buf_len,
                         char *body_buf,
                         unsigned int body_buf_len);
+
+/* Returns buffer with target header value or NULL if header does not exist. */
+char *netify_request_header_get(char *target_buf, char *header_buf);
 
 #endif

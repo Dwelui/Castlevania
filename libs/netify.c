@@ -117,6 +117,9 @@ int netify_connection_close(int connectionfd) {
     return 0;
 }
 
+/*
+ * TODO: Refactor to pack request buffer into request structure.
+ */
 int netify_request_read(int connectionfd,
                         char *resource_buf,
                         unsigned int resource_buf_len,
@@ -177,38 +180,62 @@ int netify_request_read(int connectionfd,
     return result;
 }
 
+char *netify_request_header_get(char *target_buf, char *header_buf) {
+    char *target_start_ptr = strstr(header_buf, target_buf);
+    if (target_start_ptr == NULL) {
+        return NULL;
+    }
+
+    int target_key_buf_len = strlen(target_buf) + 2; /* add 2 for `: ` in header line connecting key and value */
+    target_start_ptr += target_key_buf_len;
+
+    int result_buf_len = sizeof(char) * NETIFY_MAX_HEADER_SINGLE_SIZE;
+    char *result_buf = (char *)malloc(result_buf_len);
+    int i, j;
+    for (i = 0, j = 0; i < result_buf_len; i++) {
+        if (target_start_ptr[j] == '\n' || target_start_ptr[j] == '\0') {
+            break;
+        }
+
+        result_buf[i] = target_start_ptr[j++];
+    }
+
+    result_buf[i] = '\0';
+
+    return result_buf;
+}
+
 /*
     TODO:
     - Add validation for len parameters;
     - Add correct amount of new lines (after status_code line, after headers)
-    - Fix new line to \r\n instead of \n
+    - Fix new line to \r\n instead of \n (dump each symbol sent and check ascii codes, make sure every line ends with \r\n)
 */
-int netify_response_send(
-    int connectionfd, int status_code, char *headers_buffer, int headers_buffer_len, char *message_buffer, int message_buffer_len) {
+int netify_response_send(int connectionfd, int status_code, char *headers_buf, char *body_buf) {
     char status_code_buffer[20];
     sprintf(status_code_buffer, "HTTP/1.1 %d %s\n", status_code, http_status_to_string(status_code));
-    int status_code_buffer_len = strlen(status_code_buffer);
 
-    int message_padding_len = 2;
+    int message_padding_len = 4;
 
-    int res_buffer_len = status_code_buffer_len + headers_buffer_len + message_padding_len + message_buffer_len;
+    int res_buffer_len = strlen(status_code_buffer) + strlen(headers_buf) + message_padding_len + strlen(body_buf);
     char *res_buffer = (char *)malloc(res_buffer_len);
     int i, j = 0;
 
-    for (i = 0; i < status_code_buffer_len; i++, j++) {
+    for (i = 0; status_code_buffer[i] != '\0'; i++, j++) {
         res_buffer[j] = status_code_buffer[i];
     }
 
-    for (i = 0; i < headers_buffer_len; i++, j++) {
-        res_buffer[j] = headers_buffer[i];
+    for (i = 0; headers_buf[i] != '\0'; i++, j++) {
+        res_buffer[j] = headers_buf[i];
     }
 
-    for (i = 0; i < message_padding_len; i++, j++) {
-        res_buffer[j] = '\n';
+    for (i = 0; i < message_padding_len / 2; i++) {
+        res_buffer[j++] = '\r';
+        res_buffer[j++] = '\n';
     }
 
-    for (i = 0; i < message_buffer_len; i++, j++) {
-        res_buffer[j] = message_buffer[i];
+    for (i = 0; body_buf[i] != '\0'; i++, j++) {
+        res_buffer[j] = body_buf[i];
     }
 
     logify_log(INFO, "NETIFY::INFO::Sending response with %d bytes. Response:\n%s\n", res_buffer_len, res_buffer);

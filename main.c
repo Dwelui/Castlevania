@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 
 int main() {
-    int socketfd = netify_socket_bind(8080);
+    int socketfd = netify_socket_bind(8081);
     if (socketfd == -1) {
         return 0;
     }
@@ -42,7 +42,9 @@ int main() {
 
         logify_log(INFO, "REQUEST\nresource:\n%s\nheader:\n%s\nbody:\n%s", req_resource_buf, req_header_buf, req_body_buf);
 
-        result = netify_response_send(connectionfd, HTTP_OK, "", 0, message_buffer, sizeof(message_buffer));
+        char *req_header_computer_name_buf = netify_request_header_get("x-computer-name", req_header_buf);
+
+        result = netify_response_send(connectionfd, HTTP_OK, "", message_buffer);
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
