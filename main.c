@@ -1,13 +1,24 @@
 #include "libs/logify.h"
 #include "libs/netify.h"
 
+#include <signal.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 
+static volatile sig_atomic_t g_stop = 0;
+
+static void on_signal(int sig) {
+    (void)sig;
+
+    g_stop = 1;
+}
+
 int main() {
-    int socketfd = netify_socket_bind(8081);
+    signal(SIGINT, on_signal);
+
+    int socketfd = netify_socket_bind(8080);
     if (socketfd == -1) {
         return 0;
     }
@@ -25,7 +36,7 @@ int main() {
 
     char *res_body_buf = (char *)malloc(sizeof(char) * NETIFY_MAX_BODY_SIZE);
 
-    while (1) {
+    while (!g_stop) {
         struct sockaddr_in client_sockaddr_in;
         socklen_t client_sockaddr_in_len = sizeof(client_sockaddr_in);
 
@@ -34,8 +45,8 @@ int main() {
             break;
         }
 
-        result = netify_request_read(connectionfd, req_resource_buf, req_resouce_buf_len, req_header_buf, req_header_buf_len,
-                                     req_body_buf, req_body_buf_len);
+        result = netify_request_read(connectionfd, req_resource_buf, req_resouce_buf_len, req_header_buf, req_header_buf_len, req_body_buf,
+                                     req_body_buf_len);
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
@@ -56,7 +67,10 @@ int main() {
     }
 
     netify_socket_close(socketfd);
+    free(req_resource_buf);
+    free(req_header_buf);
     free(req_body_buf);
+    free(res_body_buf);
 
     return 0;
 }
