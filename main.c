@@ -15,10 +15,21 @@ static void on_signal(int sig) {
     g_stop = 1;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     signal(SIGINT, on_signal);
 
-    int socketfd = netify_socket_bind(8080);
+    if (argc < 2) {
+        logify_log(ERROR, "Must provide port argument");
+        return -1;
+    }
+
+    int port = atoi(argv[1]);
+    if (port < 0 || port > 65535) {
+        logify_log(ERROR, "Invalid port provided");
+        return -1;
+    }
+
+    int socketfd = netify_socket_bind(port);
     if (socketfd == -1) {
         return 0;
     }
