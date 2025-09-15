@@ -1,11 +1,11 @@
-#include "libs/cJSON.h"
+#include "handlers/turtle/turtle_handler.h"
 #include "libs/logify.h"
 #include "libs/netify.h"
 
 #include <netinet/in.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 
 static volatile sig_atomic_t g_stop = 0;
@@ -58,26 +58,15 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        cJSON *root = cJSON_Parse(req_body_buf);
-        if (root == NULL) {
-            logify_log(ERROR, "Failed to parse json\n");
-        }
-
-        cJSON *name = cJSON_GetObjectItem(root, "name");
-        if (cJSON_IsString(name) && (name->valuestring != NULL)) {
-            logify_log(DEBUG, "Name: %s\n", name->valuestring);
+        char *req_header_type_buf = netify_request_header_get("type", req_header_buf);
+        if (strcmp(req_header_type_buf, "turtle") == 0) {
+            res_body_buf = turtle_handler_handle(req_resource_buf, req_header_buf, req_body_buf);
         } else {
-            logify_log(ERROR, "Could not find 'name' string\n");
+            logify_log(ERROR, "Unsupported type provided: %s", req_header_type_buf);
+            continue;
         }
 
-        cJSON_Delete(root);
-
-        logify_log(INFO, "REQUEST\nresource:\n%s\nheader:\n%s\nbody:\n%s", req_resource_buf, req_header_buf, req_body_buf);
-
-        char *req_header_computer_name_buf = netify_request_header_get("x-computer-name", req_header_buf);
-
-        sprintf(res_body_buf, "Hello %s!", req_header_computer_name_buf);
-        result = netify_response_send(connectionfd, HTTP_OK, "", res_body_buf);
+        result = netify_response_send(connectionfd, HTTP_OK, "Hello World!", res_body_buf);
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
