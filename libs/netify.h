@@ -49,13 +49,7 @@ int netify_response_send(int connectionfd, int status_code, char *headers_buf, c
 
 /* Reads a request resource, headers, body into resource_buf, header_buf and body_buf respectivly.
  * Returns -1 on error. */
-int netify_request_read(int connectionfd,
-                        char *resource_buf,
-                        unsigned int resource_buf_len,
-                        char *header_buf,
-                        unsigned int header_buf_len,
-                        char *body_buf,
-                        unsigned int body_buf_len);
+int netify_request_read(int connectionfd, char *resource_buf, char *header_buf, char *body_buf);
 
 /* Returns buffer with target header value or NULL if header does not exist. */
 char *netify_request_header_get(char *target_buf, char *header_buf);

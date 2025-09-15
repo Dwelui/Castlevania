@@ -1,8 +1,9 @@
+#include "libs/cJSON.h"
 #include "libs/logify.h"
 #include "libs/netify.h"
 
-#include <signal.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -36,14 +37,9 @@ int main(int argc, char *argv[]) {
 
     int result, connectionfd;
 
-    unsigned int req_resouce_buf_len = sizeof(char) * NETIFY_MAX_RESOURCE_SIZE;
-    char *req_resource_buf = (char *)malloc(req_resouce_buf_len);
-
-    unsigned int req_header_buf_len = sizeof(char) * NETIFY_MAX_HEADER_SIZE;
-    char *req_header_buf = (char *)malloc(req_header_buf_len);
-
-    unsigned int req_body_buf_len = sizeof(char) * NETIFY_MAX_BODY_SIZE;
-    char *req_body_buf = (char *)malloc(req_body_buf_len);
+    char *req_resource_buf = (char *)malloc(sizeof(char) * NETIFY_MAX_RESOURCE_SIZE);
+    char *req_header_buf = (char *)malloc(sizeof(char) * NETIFY_MAX_HEADER_SIZE);
+    char *req_body_buf = (char *)malloc(sizeof(char) * NETIFY_MAX_BODY_SIZE);
 
     char *res_body_buf = (char *)malloc(sizeof(char) * NETIFY_MAX_BODY_SIZE);
 
@@ -56,12 +52,25 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        result = netify_request_read(connectionfd, req_resource_buf, req_resouce_buf_len, req_header_buf, req_header_buf_len, req_body_buf,
-                                     req_body_buf_len);
+        result = netify_request_read(connectionfd, req_resource_buf, req_header_buf, req_body_buf);
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
         }
+
+        cJSON *root = cJSON_Parse(req_body_buf);
+        if (root == NULL) {
+            logify_log(ERROR, "Failed to parse json\n");
+        }
+
+        cJSON *name = cJSON_GetObjectItem(root, "name");
+        if (cJSON_IsString(name) && (name->valuestring != NULL)) {
+            logify_log(DEBUG, "Name: %s\n", name->valuestring);
+        } else {
+            logify_log(ERROR, "Could not find 'name' string\n");
+        }
+
+        cJSON_Delete(root);
 
         logify_log(INFO, "REQUEST\nresource:\n%s\nheader:\n%s\nbody:\n%s", req_resource_buf, req_header_buf, req_body_buf);
 

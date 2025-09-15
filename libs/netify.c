@@ -120,13 +120,7 @@ int netify_connection_close(int connectionfd) {
 /*
  * TODO: Refactor to pack request buffer into request structure.
  */
-int netify_request_read(int connectionfd,
-                        char *resource_buf,
-                        unsigned int resource_buf_len,
-                        char *header_buf,
-                        unsigned int header_buf_len,
-                        char *body_buf,
-                        unsigned int body_buf_len) {
+int netify_request_read(int connectionfd, char *resource_buf, char *header_buf, char *body_buf) {
     unsigned int req_buf_len =
         NETIFY_MAX_RESOURCE_SIZE + NETIFY_MAX_HEADER_SIZE + NETIFY_MAX_BODY_SIZE + 3; /* added padding for look ahead check. */
     char *req_buf = (char *)malloc(req_buf_len);
@@ -148,21 +142,20 @@ int netify_request_read(int connectionfd,
             i++;
             line_count++;
         } else if ((int)req_buf[i] == 0) {
-            body_idx--;
             break;
         }
 
-        if (request_part == 1 && resource_idx < resource_buf_len) {
+        if (request_part == 1 && resource_idx < NETIFY_MAX_RESOURCE_SIZE) {
             resource_buf[resource_idx++] = req_buf[i];
         }
 
-        if (request_part == 2 && header_idx < header_buf_len) {
+        if (request_part == 2 && header_idx < NETIFY_MAX_HEADER_SIZE) {
             if (header_idx == 0 && req_buf[i] == '\n')
                 continue;
             header_buf[header_idx++] = req_buf[i];
         }
 
-        if (request_part == 3 && body_idx < body_buf_len) {
+        if (request_part == 3 && body_idx < NETIFY_MAX_BODY_SIZE) {
             if (body_idx == 0 && req_buf[i] == '\n')
                 continue;
             body_buf[body_idx++] = req_buf[i];
@@ -172,10 +165,6 @@ int netify_request_read(int connectionfd,
     resource_buf[resource_idx] = '\0';
     header_buf[header_idx] = '\0';
     body_buf[body_idx] = '\0';
-
-    resource_buf_len = resource_idx;
-    header_buf_len = header_idx;
-    body_buf_len = body_idx;
 
     return result;
 }
