@@ -54,4 +54,7 @@ int netify_request_read(int connectionfd, char *resource_buf, char *header_buf, 
 /* Returns buffer with target header value or NULL if header does not exist. */
 char *netify_request_header_get(char *target_buf, char *header_buf);
 
+/* Returns buffer ptr with route path. */
+char* netify_request_resource_get_route(const char* resource_buf);
+
 #endif

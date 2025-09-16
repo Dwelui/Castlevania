@@ -229,3 +229,35 @@ int netify_response_send(int connectionfd, int status_code, char *headers_buf, c
 
     return netify_connection_write(connectionfd, res_buf, res_buf_len);
 }
+
+char *netify_request_resource_get_route(const char *resource_buf) {
+    int len = strlen(resource_buf);
+    char *result = (char *)malloc(sizeof(char) * len);
+    if (!result)
+        return NULL;
+
+    /* TODO: Create stringify lib with stringify_explode function that returns StringArray object. Create DataStructify lib for Handling StringArray */
+    int i, j = 0, space_char_count = 0;
+    for (i = 0; i < len; i++) {
+        if (resource_buf[i] == '\0') {
+            break;
+        }
+
+        if (resource_buf[i] == ' ') {
+            space_char_count++;
+            i++;
+        }
+
+        if (space_char_count == 1) {
+            result[j++] = resource_buf[i];
+        }
+
+        if (space_char_count > 1) {
+            break;
+        }
+    }
+
+    result[j] = '\0';
+
+    return result;
+}

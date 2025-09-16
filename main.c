@@ -43,6 +43,8 @@ int main(int argc, char *argv[]) {
 
     char *res_body_buf = (char *)malloc(sizeof(char) * NETIFY_MAX_BODY_SIZE);
 
+    char *route;
+
     while (!g_stop) {
         struct sockaddr_in client_sockaddr_in;
         socklen_t client_sockaddr_in_len = sizeof(client_sockaddr_in);
@@ -58,11 +60,12 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        char *req_header_type_buf = netify_request_header_get("type", req_header_buf);
-        if (strcmp(req_header_type_buf, "turtle") == 0) {
-            res_body_buf = turtle_handler_handle(req_resource_buf, req_header_buf, req_body_buf);
+        route = netify_request_resource_get_route(req_resource_buf);
+        logify_log(DEBUG, "Route: %s", route);
+        if (strcmp(route, "/api/turtle/chopper/v1") == 0) {
+            /* res_body_buf = turtle_handler_handle(req_resource_buf, req_header_buf, req_body_buf); */
         } else {
-            logify_log(ERROR, "Unsupported type provided: %s", req_header_type_buf);
+            logify_log(ERROR, "Unsupported route provided: %s", route);
             continue;
         }
 
@@ -72,6 +75,7 @@ int main(int argc, char *argv[]) {
             break;
         }
 
+        free(route);
         netify_connection_close(connectionfd);
     }
 
