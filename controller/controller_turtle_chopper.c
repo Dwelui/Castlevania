@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 
+// TODO: Move this to agent directory. Because it does not fit the resource controller pattern.
 char *controller_turtle_chopper_handler(const char *resource_buf, const char *header_buf, const char *body_buf) {
     char *computer_id = netify_request_header_get("computer-id", header_buf);
     Turtle *turtle = state_upsert_turle(1, 123, 123, 123);
@@ -15,6 +16,8 @@ char *controller_turtle_chopper_handler(const char *resource_buf, const char *he
     // 3. "chopper-cut" action is pushed to actions stack if turtle of type "chopper" is closest to dedicated block for "tree-chopping" that is in state "tree-grown"
     // 4. Dedicated block has "tree-growing", "tree-grown", "tree-felling", "tree-planting"
     // 5. "chopper-check" action is pushed to action stack if turtle of type "chopper" is closest to dedicated block for "tree-chopping" that in in state "tree-growing" and enough time elapsed since last "updated_at"
+
+
 
 
 
