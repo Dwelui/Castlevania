@@ -1,7 +1,7 @@
 #include "controller/controller_turtle.h"
-#include "libs/cJSON.h"
 #include "libs/logify.h"
 #include "libs/netify.h"
+#include "state.h"
 
 #include <netinet/in.h>
 #include <signal.h>
@@ -19,6 +19,7 @@ static void on_signal(int sig) {
 
 int main(int argc, char *argv[]) {
     signal(SIGINT, on_signal);
+    state_init();
 
     if (argc < 2) {
         logify_log(ERROR, "Must provide port argument");
@@ -59,6 +60,7 @@ int main(int argc, char *argv[]) {
             break;
         }
 
+        g_state.total_requests++;
         char *route = netify_request_resource_get_route(req_resource_buf);
         char *response;
         if (strcmp(route, "/api/turtle/chopper/v1") == 0) {
@@ -80,6 +82,7 @@ int main(int argc, char *argv[]) {
         netify_connection_close(connectionfd);
     }
 
+    state_destroy();
     netify_socket_close(socketfd);
     free(req_resource_buf);
     free(req_header_buf);

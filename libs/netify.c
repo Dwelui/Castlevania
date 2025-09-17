@@ -169,7 +169,7 @@ int netify_request_read(int connectionfd, char *resource_buf, char *header_buf, 
     return result;
 }
 
-char *netify_request_header_get(char *target_buf, char *header_buf) {
+char *netify_request_header_get(const char *target_buf, const char *header_buf) {
     char *target_start_ptr = strstr(header_buf, target_buf);
     if (target_start_ptr == NULL) {
         return NULL;

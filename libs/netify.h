@@ -1,5 +1,4 @@
-#ifndef NETIFY_H
-#define NETIFY_H
+#pragma once
 
 #include <netinet/in.h>
 
@@ -52,9 +51,7 @@ int netify_response_send(int connectionfd, int status_code, char *headers_buf, c
 int netify_request_read(int connectionfd, char *resource_buf, char *header_buf, char *body_buf);
 
 /* Returns buffer with target header value or NULL if header does not exist. */
-char *netify_request_header_get(char *target_buf, char *header_buf);
+char *netify_request_header_get(const char *target_buf, const char *header_buf);
 
 /* Returns buffer ptr with route path. */
 char* netify_request_resource_get_route(const char* resource_buf);
-
-#endif
