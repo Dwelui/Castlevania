@@ -1,4 +1,5 @@
-#include "handlers/turtle/turtle_handler.h"
+#include "controller/controller_turtle.h"
+#include "libs/cJSON.h"
 #include "libs/logify.h"
 #include "libs/netify.h"
 
@@ -43,8 +44,6 @@ int main(int argc, char *argv[]) {
 
     char *res_body_buf = (char *)malloc(sizeof(char) * NETIFY_MAX_BODY_SIZE);
 
-    char *route;
-
     while (!g_stop) {
         struct sockaddr_in client_sockaddr_in;
         socklen_t client_sockaddr_in_len = sizeof(client_sockaddr_in);
@@ -60,22 +59,24 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        route = netify_request_resource_get_route(req_resource_buf);
-        logify_log(DEBUG, "Route: %s", route);
+        char *route = netify_request_resource_get_route(req_resource_buf);
+        char *response;
         if (strcmp(route, "/api/turtle/chopper/v1") == 0) {
-            /* res_body_buf = turtle_handler_handle(req_resource_buf, req_header_buf, req_body_buf); */
+            response = controller_turtle_chopper_handler(req_resource_buf, req_header_buf, req_body_buf);
         } else {
             logify_log(ERROR, "Unsupported route provided: %s", route);
             continue;
         }
 
-        result = netify_response_send(connectionfd, HTTP_OK, "Hello World!", res_body_buf);
+        result = netify_response_send(connectionfd, HTTP_OK, "Hello World!", response);
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
         }
 
+        free(response);
         free(route);
+
         netify_connection_close(connectionfd);
     }
 
