@@ -35,6 +35,7 @@ void state_init() {
     g_state.root = cJSON_CreateObject();
 
     cJSON_AddItemToObject(g_state.root, "turtles", cJSON_CreateObject());
+    cJSON_AddStringToObject(g_state.root, "version", "1.0.0");
 }
 
 void state_destroy() { cJSON_Delete(g_state.root); }
