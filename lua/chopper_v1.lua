@@ -13,7 +13,7 @@ end
 local url = SERVER_DOMAIN .. URL
 local x, y, z = gps.locate()
 local headers = {
-	["computer-id"] = tostring(os.getComputerId()),
+	["computer-id"] = tostring(os.getComputerID()),
 	["position"] = x .. "," .. y .. "," .. z,
 }
 
