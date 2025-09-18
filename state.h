@@ -10,6 +10,8 @@ enum WorldEntityDirection {
     DIRECTION_EAST = 2,  // +x
     DIRECTION_SOUTH = 3, // +z
     DIRECTION_WEST = 4,  // -x
+    DIRECTION_UP = 5,  // +y
+    DIRECTION_DOWN = 6,  // -y
 };
 
 typedef struct {
