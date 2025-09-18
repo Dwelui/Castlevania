@@ -10,18 +10,16 @@ else
 	body = "No block"
 end
 
-local url = SERVER_DOMAIN .. URL
 local x, y, z = gps.locate()
 local headers = {
 	["computer-id"] = tostring(os.getComputerID()),
 	["position"] = x .. "," .. y .. "," .. z,
 }
 
-local res, err = http.post(url, body, headers)
+local res, err = http.post(SERVER_DOMAIN .. URL, body, headers)
 
 if res then
-	local body = res.readAll()
-	local data = textutils.unserializeJSON(body)
+	local data = textutils.unserializeJSON(res.readAll())
 
 	for _, action in ipairs(data.actions) do
 		local fn, err = load("return " .. action)
