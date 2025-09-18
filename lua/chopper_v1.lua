@@ -12,7 +12,7 @@ end
 
 local x, y, z = gps.locate()
 local headers = {
-	["computer-id"] = tostring(os.getComputerID()),
+	["id"] = tostring(os.getComputerID()),
 	["position"] = x .. "," .. y .. "," .. z,
 }
 

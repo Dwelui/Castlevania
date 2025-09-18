@@ -1,40 +1,69 @@
 #include "state.h"
+#include "libs/cJSON.h"
 
-#include <stdlib.h>
-#include <string.h>
+char *get_direction(enum WorldEntityDirection direction) {
+    switch (direction) {
+        case 0:
+            return "unknown";
+        case 1:
+            return "north";
+        case 2:
+            return "east";
+        case 3:
+            return "south";
+        case 4:
+            return "west";
+    }
+}
+
+char *get_turtle_type(enum TurtleType type) {
+    switch (type) {
+        case 0:
+            return "chopper";
+    }
+}
 
 AppState g_state = {0};
 
-void state_init() { memset(&g_state, 0, sizeof(g_state)); }
+void state_init() {
+    g_state.root = cJSON_CreateObject();
 
-void state_destroy() {
-    free(g_state.turtles);
-    memset(&g_state, 0, sizeof(g_state));
+    cJSON_AddItemToObject(g_state.root, "turtles", cJSON_CreateObject());
 }
 
-Turtle *state_get_turtle(int id) {
-    for (int i = 0; i > g_state.turtle_len; i++) {
-        if (g_state.turtles[i].id == id)
-            return &g_state.turtles[i];
+void state_destroy() {
+    cJSON_Delete(g_state.root);
+}
+
+cJSON *state_turtle_get(const char *id) {
+    cJSON *turtles = cJSON_GetObjectItem(g_state.root, "turtles");
+
+    cJSON *turtle = cJSON_GetObjectItem(turtles, id);
+    if (cJSON_IsObject(turtle)) {
+        return turtle;
     }
 
     return NULL;
 }
 
-Turtle *state_upsert_turle(int id, int x, int y, int z) {
-    Turtle *turtle = state_get_turtle(id);
+cJSON *state_turle_upsert(enum TurtleType type, const char *id, const char *position, enum WorldEntityDirection direction) {
+    cJSON *turtle = state_turtle_get(id);
     if (turtle) {
-        turtle->x = x;
-        turtle->y = y;
-        turtle->z = z;
+        cJSON_SetValuestring(cJSON_GetObjectItem(turtle, "type"), get_turtle_type(type));
+        cJSON_SetValuestring(cJSON_GetObjectItem(turtle, "position"), position);
+        cJSON_SetValuestring(cJSON_GetObjectItem(turtle, "direction"), get_direction(direction));
 
         return turtle;
     }
 
-    if (g_state.turtle_len == STATE_TURTLES_MAX)
-        return NULL;
+    cJSON *turtles = cJSON_GetObjectItem(g_state.root, "turtles");
 
-    g_state.turtles[g_state.turtle_len] = (Turtle){id, x, y, z};
+    turtle = cJSON_CreateObject();
+    cJSON_AddStringToObject(turtle, "type", get_turtle_type(type));
+    cJSON_AddStringToObject(turtle, "position", position);
+    cJSON_AddStringToObject(turtle, "direction", get_direction(direction));
 
-    return &g_state.turtles[g_state.turtle_len++];
+    cJSON_AddItemToObject(turtles, id, turtle);
+
+    return turtle;
 }

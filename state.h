@@ -1,17 +1,21 @@
 #pragma once
 
-typedef struct {
-    int id;
-    int x, y, z;
-} Turtle;
+#include "libs/cJSON.h"
 
-#define STATE_TURTLES_MAX 128
+enum TurtleType { TURTLE_CHOPPER = 0 };
+
+enum WorldEntityDirection {
+    DIRECTION_UNKNOWN = 0,
+    DIRECTION_NORTH = 1, // -z
+    DIRECTION_EAST = 2,  // +x
+    DIRECTION_SOUTH = 3, // +z
+    DIRECTION_WEST = 4,  // -x
+};
 
 typedef struct {
     int total_requests;
 
-    Turtle turtles[STATE_TURTLES_MAX];
-    int turtle_len;
+    cJSON *root;
 } AppState;
 
 extern AppState g_state;
@@ -19,5 +23,5 @@ extern AppState g_state;
 void state_init();
 void state_destroy();
 
-Turtle *state_get_turtle(int id);
-Turtle *state_upsert_turle(int id, int x, int y, int z);
+cJSON *state_turtle_get(const char *id);
+cJSON *state_turle_upsert(enum TurtleType type, const char *id, const char *position, enum WorldEntityDirection direction);

@@ -7,8 +7,13 @@
 
 // TODO: Move this to agent directory. Because it does not fit the resource controller pattern.
 char *controller_turtle_chopper_handler(const char *resource_buf, const char *header_buf, const char *body_buf) {
-    char *computer_id = netify_request_header_get("computer-id", header_buf);
-    Turtle *turtle = state_upsert_turle(1, 123, 123, 123);
+    const char *id = netify_request_header_get("id", header_buf);
+    const char *position = netify_request_header_get("position", header_buf);
+
+    cJSON *turtle = state_turle_upsert(TURTLE_CHOPPER, id, position, DIRECTION_NORTH);
+
+    logify_log(DEBUG, "Id: %s, Position: %s", id, position);
+    logify_log(DEBUG, "STATE: %s",  cJSON_Print(g_state.root));
 
     // 1. Save turtle state. So the server can keep track of what is happening between requests.
     // Save id, position, direction, updated_at, actions(a structure stack) (Later will need to save fuel and inventory)
