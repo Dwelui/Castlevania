@@ -26,20 +26,25 @@ char *controller_turtle_chopper_handler(const char *resource_buf, const char *he
     cJSON *action = cJSON_CreateObject();
     cJSON_AddItemToObject(response, "action", action);
 
-    cJSON *blocks = cJSON_Parse(body_buf);
-    if (!blocks) {
+    cJSON *request_body_json = cJSON_Parse(body_buf);
+
+    logify_log(DEBUG, "Request: %s\n", cJSON_Print(request_body_json));
+    if (!request_body_json) {
         char *result = cJSON_Print(response);
         cJSON_Delete(response);
 
         return result;
     }
 
-    int is_log = turtlefy_blocks_contain_tag(blocks, "minecraft:logs", TURTLE_DIRECTION_FORWARD);
-    if (is_log) {
-        turtlefy_action_set(turtle, TURTLE_ACTION_CHOPPING);
+    cJSON *blocks = cJSON_GetObjectItem(request_body_json, "blocks");
+    if (blocks) {
+        int is_log = turtlefy_blocks_contain_tag(blocks, "minecraft:logs", TURTLE_DIRECTION_FORWARD);
+        if (is_log) {
+            turtlefy_action_set(turtle, TURTLE_ACTION_CHOPPING);
 
-        cJSON_AddStringToObject(action, "name", "turtle.dig()");
-        // send dig command
+            cJSON_AddStringToObject(action, "name", "turtle.dig()");
+            // send dig command
+        }
     }
 
     logify_log(DEBUG, "STATE: %s\n", cJSON_Print(g_state.root));
