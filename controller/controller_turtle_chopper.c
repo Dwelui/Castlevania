@@ -12,7 +12,6 @@ char *controller_turtle_chopper_handler(const char *resource_buf, const char *he
 
     cJSON *turtle = state_turle_upsert(TURTLE_CHOPPER, id, position, DIRECTION_NORTH);
 
-    logify_log(DEBUG, "Id: %s, Position: %s", id, position);
     logify_log(DEBUG, "STATE: %s",  cJSON_Print(g_state.root));
 
     // 1. Save turtle state. So the server can keep track of what is happening between requests.
