@@ -27,7 +27,7 @@ function module.get_vertical_blocks_data()
 		result.down = data
 	end
 
-	return textutils.serializeJSON(result, true)
+	return textutils.serializeJSON(result)
 end
 
 return module
