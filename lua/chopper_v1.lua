@@ -2,7 +2,8 @@ local turtle_lib = require("turtle_lib")
 local env = require("env")
 
 local url = env.SERVER_DOMAIN .. env.CHOPPER_URL
-local res, err = http.post(url, { blocks = turtle_lib.get_vertical_blocks_data() }, turtle_lib.get_headers())
+local body = textutils.serializeJSON({ blocks = turtle_lib.get_vertical_blocks_data() })
+local res, err = http.post(url, body, turtle_lib.get_headers())
 
 if res then
 	local data = textutils.unserializeJSON(res.readAll())
@@ -20,7 +21,7 @@ if res then
 		-- end
 
 		local response = textutils.serializeJSON({
-            blocks = turtle_lib.get_vertical_blocks_data(),
+			blocks = turtle_lib.get_vertical_blocks_data(),
 			actionResult = {
 				action = data.action.name,
 				result = {
