@@ -24,7 +24,9 @@ char *controller_turtle_chopper_handler(const char *resource_buf, const char *he
 
     cJSON *response = cJSON_CreateObject();
     cJSON *action = cJSON_CreateObject();
+    cJSON *action_name = cJSON_CreateString("none");
     cJSON_AddItemToObject(response, "action", action);
+    cJSON_AddItemToObject(action, "name", action_name);
 
     cJSON *request_body_json = cJSON_Parse(body_buf);
 
@@ -42,7 +44,7 @@ char *controller_turtle_chopper_handler(const char *resource_buf, const char *he
         if (is_log) {
             turtlefy_action_set(turtle, TURTLE_ACTION_CHOPPING);
 
-            cJSON_AddStringToObject(action, "name", "turtle.dig()");
+            cJSON_SetValuestring(action_name, "turtle.dig()");
             // send dig command
         }
     }
