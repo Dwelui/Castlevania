@@ -62,7 +62,9 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(http_request->path, "/api/state") == 0) {
             struct HttpResponse *http_response = controller_web_state_index(http_request);
 
-            free(http_response);
+            if (http_response) {
+                free(http_response);
+            }
         } else {
             logify_log(ERROR, "Unsupported resource path provided: %s", http_request->path);
             continue;
@@ -74,7 +76,10 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        free(response);
+        if (response) {
+            free(response);
+        }
+
         free(http_request);
 
         netify_connection_close(connectionfd);

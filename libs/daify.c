@@ -83,7 +83,6 @@ struct StringArray *daify_string_explode(const char *target, const char *separat
     daify_string_array_push(string_array, string);
 
     free(string);
-    free(target_copy);
 
     return string_array;
 }

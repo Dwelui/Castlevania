@@ -86,7 +86,6 @@ int netify_connection_accept(int socketfd, struct sockaddr_in *client_sockaddr_i
     }
 
     result = accept(socketfd, (struct sockaddr *)client_sockaddr_in, client_sockaddr_in_len);
-
     if (result == -1) {
         logify_log(ERROR, "NETIFY::Failed to accept connection.");
         return -1;
