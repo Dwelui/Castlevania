@@ -236,7 +236,8 @@ char *netify_request_resource_get_route(const char *resource_buf) {
     if (!result)
         return NULL;
 
-    /* TODO: Create stringify lib with stringify_explode function that returns StringArray object. Create DataStructify lib for Handling StringArray */
+    /* TODO: Create stringify lib with stringify_explode function that returns StringArray object. Create DataStructify lib for Handling
+     * StringArray */
     int i, j = 0, space_char_count = 0;
     for (i = 0; i < len; i++) {
         if (resource_buf[i] == '\0') {

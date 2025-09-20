@@ -1,5 +1,6 @@
 #include "turtlefy.h"
 #include "cJSON.h"
+#include "logify.h"
 #include <string.h>
 
 const char *turtlefy_turtle_action_get_string(enum TurtleAction action) {
@@ -8,14 +9,18 @@ const char *turtlefy_turtle_action_get_string(enum TurtleAction action) {
         return "standby";
     case 1:
         return "chopping";
+    case 2:
+        return "replanting";
     }
 }
 
-enum TurtleAction turtlefy_turtle_action_enum(const char* action) {
-    if (strcmp(action, "standby")) {
+enum TurtleAction turtlefy_turtle_action_enum(const char *action) {
+    if (strcmp(action, "standby") == 0) {
         return TURTLE_ACTION_STANDBY;
-    } else if (strcmp(action, "chopping")) {
+    } else if (strcmp(action, "chopping") == 0) {
         return TURTLE_ACTION_CHOPPING;
+    } else if (strcmp(action, "replanting") == 0) {
+        return TURTLE_ACTION_REPLANTING;
     }
 
     return TURTLE_ACTION_STANDBY;
@@ -27,6 +32,10 @@ const char *turtlefy_turtle_direction_get(enum TurtleDirection direction) {
         return "none";
     case 1:
         return "forward";
+    case 2:
+        return "up";
+    case 3:
+        return "down";
     }
 }
 
@@ -49,7 +58,7 @@ enum TurtleAction turtlefy_action_get(cJSON *turtle) {
     return TURTLE_ACTION_STANDBY;
 }
 
-int turtlefy_blocks_contain_tag(cJSON *blocks, const char* target_name, enum TurtleDirection direction) {
+int turtlefy_blocks_contain_tag(cJSON *blocks, const char *target_name, enum TurtleDirection direction) {
     cJSON *block = cJSON_GetObjectItem(blocks, turtlefy_turtle_direction_get(direction));
     cJSON *tags = cJSON_GetObjectItem(block, "tags");
     if (tags) {

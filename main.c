@@ -1,4 +1,5 @@
 #include "controller/controller_turtle.h"
+#include "controller/controller_web.h"
 #include "libs/logify.h"
 #include "libs/netify.h"
 #include "state.h"
@@ -65,6 +66,10 @@ int main(int argc, char *argv[]) {
         char *response;
         if (strcmp(route, "/api/turtle/chopper/v1") == 0) {
             response = controller_turtle_chopper_handler(req_resource_buf, req_header_buf, req_body_buf);
+        } else if (strcmp(route, "/api/state") == 0) {
+            struct HttpRequest *request;
+
+            response = controller_web_state_index(request);
         } else {
             logify_log(ERROR, "Unsupported route provided: %s", route);
             continue;

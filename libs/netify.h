@@ -27,6 +27,13 @@ enum HttpStatus {
 
 enum HttpMethod { METHOD_GET = 1, METHOD_POST = 2 };
 
+struct HttpRequest {
+    enum HttpMethod method;
+};
+
+struct HttpResponse {
+};
+
 /* Creates TCP socket and binds to provided port. Returns listening fd on
  * success and -1 on error. */
 int netify_socket_bind(int port);

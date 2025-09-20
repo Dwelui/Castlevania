@@ -9,18 +9,7 @@ char *controller_turtle_chopper_handler(const char *resource_buf, const char *he
     const char *id = netify_request_header_get("id", header_buf);
     const char *position = netify_request_header_get("position", header_buf);
 
-    int new_turtle = 0;
-
-    cJSON *turtle = state_turtle_get(id);
-    if (!turtle) {
-        new_turtle = 1;
-    }
-
-    turtle = state_turle_upsert(TURTLE_CHOPPER, id, position, DIRECTION_NORTH);
-
-    if (new_turtle) {
-        turtlefy_action_set(turtle, TURTLE_ACTION_STANDBY);
-    }
+    cJSON *turtle = state_turle_upsert(TURTLE_CHOPPER, id, position, DIRECTION_NORTH);
 
     cJSON *response = cJSON_CreateObject();
     cJSON *action = cJSON_CreateObject();
@@ -39,13 +28,29 @@ char *controller_turtle_chopper_handler(const char *resource_buf, const char *he
     }
 
     cJSON *blocks = cJSON_GetObjectItem(request_body_json, "blocks");
-    if (blocks) {
-        int is_log = turtlefy_blocks_contain_tag(blocks, "minecraft:logs", TURTLE_DIRECTION_FORWARD);
-        if (is_log) {
-            turtlefy_action_set(turtle, TURTLE_ACTION_CHOPPING);
+    if (turtlefy_blocks_contain_tag(blocks, "minecraft:logs", TURTLE_DIRECTION_FORWARD)) {
+        turtlefy_action_set(turtle, TURTLE_ACTION_CHOPPING);
+    }
 
+    if (blocks && turtlefy_action_get(turtle) == TURTLE_ACTION_CHOPPING) {
+        if (turtlefy_blocks_contain_tag(blocks, "minecraft:logs", TURTLE_DIRECTION_FORWARD)) {
             cJSON_SetValuestring(action_name, "turtle.dig()");
-            // send dig command
+        } else if (turtlefy_blocks_contain_tag(blocks, "minecraft:leaves", TURTLE_DIRECTION_UP)) {
+            cJSON_SetValuestring(action_name, "turtle.digUp()");
+        } else if (!turtlefy_blocks_contain_tag(blocks, "minecraft:leaves", TURTLE_DIRECTION_UP)) {
+            // 1. Need to save action history
+            // 2. If previous action was up it means there is no more wood to harvest and set action to replanting
+            cJSON_SetValuestring(action_name, "turtle.up()");
+        } else {
+            turtlefy_action_set(turtle, TURTLE_ACTION_REPLANTING);
+        }
+    }
+
+    if (blocks && turtlefy_action_get(turtle) == TURTLE_ACTION_REPLANTING) {
+        if (turtlefy_blocks_contain_tag(blocks, "minecraft:dirt", TURTLE_DIRECTION_DOWN)) {
+            turtlefy_action_set(turtle, TURTLE_ACTION_STANDBY);
+        } else {
+            cJSON_SetValuestring(action_name, "turtle.down()");
         }
     }
 
