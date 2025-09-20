@@ -1,11 +1,12 @@
 #pragma once
 
+#include "daify.h"
 #include <netinet/in.h>
 
 #define NETIFY_MAX_RESOURCE_SIZE 256
 #define NETIFY_MAX_HEADER_SIZE 1024
 #define NETIFY_MAX_HEADER_SINGLE_SIZE 256
-#define NETIFY_MAX_BODY_SIZE 2048
+#define NETIFY_MAX_BODY_SIZE 4096
 #define NETIFY_MAX_MESSAGE_SIZE 512
 #define NETIFY_MAX_QUEUED_REQUEST_COUNT 5
 
@@ -29,7 +30,9 @@ enum HttpMethod { METHOD_GET = 1, METHOD_POST = 2 };
 
 struct HttpRequest {
     enum HttpMethod method;
-    const char path[NETIFY_MAX_RESOURCE_SIZE];
+    char path[NETIFY_MAX_RESOURCE_SIZE];
+    struct StringArray *headers;
+    char body[NETIFY_MAX_BODY_SIZE];
 };
 
 struct HttpResponse {};
@@ -53,12 +56,10 @@ int netify_connection_close(int connectionfd);
 /* Sends response to connection fd. Returns -1 on error and 0 on success. */
 int netify_response_send(int connectionfd, int status_code, char *headers_buf, char *body_buf);
 
-/* Reads a request resource, headers, body into resource_buf, header_buf and body_buf respectivly.
- * Returns -1 on error. */
-int netify_request_read(int connectionfd, char *resource_buf, char *header_buf, char *body_buf);
+struct HttpRequest *netify_request_read(int connectionfd);
 
 /* Returns buffer with target header value or NULL if header does not exist. */
-char *netify_request_header_get(const char *target_buf, const char *header_buf);
+char *netify_request_header_get(const char *target_buf, const struct HttpRequest *request);
 
 /* Returns buffer ptr with route path. */
 char *netify_request_resource_get_route(const char *resource_buf);

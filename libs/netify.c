@@ -35,6 +35,17 @@ const char *http_status_to_string(int code) {
     }
 }
 
+enum HttpMethod http_method_to_enum(const char *method) {
+    if (strcmp("POST", method) == 0) {
+        return METHOD_POST;
+    } else if (strcmp("GET", method) == 0) {
+        return METHOD_GET;
+    }
+
+    logify_log(WARNING, "NETIFY::Failed to parse http method to enum %s", method);
+    return METHOD_GET;
+}
+
 int netify_socket_bind(int port) {
     struct sockaddr_in server_sockaddr_in;
 
@@ -118,79 +129,80 @@ int netify_connection_close(int connectionfd) {
     return 0;
 }
 
-/*
- * TODO: Refactor to pack request buffer into request structure.
- */
-int netify_request_read(int connectionfd, char *resource_buf, char *header_buf, char *body_buf) {
-    unsigned int req_buf_len =
-        NETIFY_MAX_RESOURCE_SIZE + NETIFY_MAX_HEADER_SIZE + NETIFY_MAX_BODY_SIZE + 3; /* added padding for look ahead check. */
-    char *req_buf = (char *)malloc(req_buf_len);
+struct HttpRequest *netify_request_read(int connectionfd) {
+    struct HttpRequest *request = malloc(sizeof *request);
 
-    int result = netify_connection_read(connectionfd, req_buf, req_buf_len);
-    if (result == -1) {
-        return -1;
-    }
+    unsigned int req_buf_len = DAIFY_STRING_ARRAY_CAPACITY;
+    char *req_buf = (char *)malloc(req_buf_len + 1);
 
-    unsigned int i, resource_idx = 0, header_idx = 0, body_idx = 0, line_count = 0;
-    unsigned short request_part = 1; /* 1 - resource, 2 - header, 3 - body */
-    for (i = 0; i < req_buf_len; i++) {
-        if (req_buf[i] == '\r' && req_buf[i + 1] == '\n' && req_buf[i + 2] == '\r' && req_buf[i + 3] == '\n') {
-            request_part = 3;
-            i += 3;
-            line_count++;
-        } else if (req_buf[i] == '\r' && req_buf[i + 1] == '\n') {
-            request_part = request_part > 2 ? request_part : 2;
-            i++;
-            line_count++;
-        } else if ((int)req_buf[i] == 0) {
+    int result;
+    struct StringArray *request_chunks = daify_create_string_array();
+    while ((result = netify_connection_read(connectionfd, req_buf, req_buf_len)) != 0) {
+        if (result == -1) {
+            return NULL;
+        }
+
+        req_buf[req_buf_len] = '\0';
+        daify_string_array_push(request_chunks, req_buf);
+        memset(req_buf, 0, req_buf_len);
+
+        if (result < req_buf_len) {
             break;
         }
+    }
 
-        if (request_part == 1 && resource_idx < NETIFY_MAX_RESOURCE_SIZE) {
-            resource_buf[resource_idx++] = req_buf[i];
-        }
+    free(req_buf);
 
-        if (request_part == 2 && header_idx < NETIFY_MAX_HEADER_SIZE) {
-            if (header_idx == 0 && req_buf[i] == '\n')
-                continue;
-            header_buf[header_idx++] = req_buf[i];
-        }
+    char *assembled_request_buf = daify_string_implode(request_chunks, "");
 
-        if (request_part == 3 && body_idx < NETIFY_MAX_BODY_SIZE) {
-            if (body_idx == 0 && req_buf[i] == '\n')
-                continue;
-            body_buf[body_idx++] = req_buf[i];
+    struct StringArray *request_separator = daify_string_explode(assembled_request_buf, "\r\n\r\n");
+
+    int body_len = strlen(request_separator->strings[1]) + 1;
+    if (body_len > NETIFY_MAX_BODY_SIZE) {
+        logify_log(ERROR, "NETIFY::Request body too big");
+        body_len = NETIFY_MAX_BODY_SIZE;
+    }
+
+    request_separator->strings[1][body_len] = '\0';
+    strncpy(request->body, request_separator->strings[1], body_len);
+
+    struct StringArray *header_lines = daify_string_explode(request_separator->strings[0], "\n");
+
+    struct StringArray *resource_line = daify_string_explode(header_lines->strings[0], " ");
+    request->method = http_method_to_enum(resource_line->strings[0]);
+
+    int path_len = strlen(resource_line->strings[1]) + 1;
+    if (path_len > NETIFY_MAX_RESOURCE_SIZE) {
+        logify_log(ERROR, "NETIFY::Request resource path too big");
+        path_len = NETIFY_MAX_RESOURCE_SIZE;
+    }
+
+    resource_line->strings[1][path_len] = '\0';
+    strncpy(request->path, resource_line->strings[1], path_len);
+
+    request->headers = daify_create_string_array();
+    for (int i = 1; i < header_lines->count; i++) {
+        if (daify_string_array_push(request->headers, header_lines->strings[i]) == -1) {
+            logify_log(ERROR, "NETIFY::Failed to push header");
         }
     }
 
-    resource_buf[resource_idx] = '\0';
-    header_buf[header_idx] = '\0';
-    body_buf[body_idx] = '\0';
-
-    return result;
+    free(assembled_request_buf);
+    free(request_separator);
+    free(header_lines);
+    free(resource_line);
+    return request;
 }
 
-char *netify_request_header_get(const char *target_buf, const char *header_buf) {
-    char *target_start_ptr = strstr(header_buf, target_buf);
-    if (target_start_ptr == NULL) {
+char *netify_request_header_get(const char *target_buf, const struct HttpRequest *request) {
+    char *header = daify_string_array_find_by_substring(request->headers, target_buf);
+    if (!header) {
         return NULL;
     }
 
-    int target_key_buf_len = strlen(target_buf) + 2; /* add 2 for `: ` in header line connecting key and value */
-    target_start_ptr += target_key_buf_len;
+    char *result_buf = daify_string_explode(header, ": ")->strings[1];
 
-    int result_buf_len = sizeof(char) * NETIFY_MAX_HEADER_SINGLE_SIZE;
-    char *result_buf = (char *)malloc(result_buf_len);
-    int i, j;
-    for (i = 0, j = 0; i < result_buf_len; i++) {
-        if (target_start_ptr[j] == '\n' || target_start_ptr[j] == '\0') {
-            break;
-        }
-
-        result_buf[i] = target_start_ptr[j++];
-    }
-
-    result_buf[i] = '\0';
+    free(header);
 
     return result_buf;
 }

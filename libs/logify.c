@@ -27,7 +27,7 @@ void logify_log(enum LogStatus status, const char *fmt, ...) {
     struct timeval tv;
     struct tm *tm_info;
     char timestamp[64];
-    char message_buf[2048];
+    char message_buf[4096];
     va_list args;
 
     gettimeofday(&tv, NULL);

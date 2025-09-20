@@ -2,10 +2,10 @@
 
 #include "cJSON.h"
 
-enum TurtleAction {
-    TURTLE_ACTION_STANDBY = 0,
-    TURTLE_ACTION_CHOPPING = 1,
-    TURTLE_ACTION_REPLANTING = 2,
+enum TurtleState {
+    TURTLE_STATE_STANDBY = 0,
+    TURTLE_STATE_CHOPPING = 1,
+    TURTLE_STATE_REPLANTING = 2,
 };
 
 enum TurtleDirection {
@@ -15,7 +15,7 @@ enum TurtleDirection {
     TURTLE_DIRECTION_DOWN = 3,
 };
 
-void turtlefy_action_set(cJSON *turtle, enum TurtleAction action);
-enum TurtleAction turtlefy_action_get(cJSON *turtle);
+void turtlefy_state_set(cJSON *turtle, enum TurtleState action);
+enum TurtleState turtlefy_state_get(cJSON *turtle);
 
 int turtlefy_blocks_contain_tag(cJSON *block, const char* target_name, enum TurtleDirection direction);

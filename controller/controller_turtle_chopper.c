@@ -5,11 +5,12 @@
 #include "../state.h"
 
 // TODO: Move this to agent directory. Because it does not fit the resource controller pattern.
-char *controller_turtle_chopper_handler(const char *resource_buf, const char *header_buf, const char *body_buf) {
-    const char *id = netify_request_header_get("id", header_buf);
-    const char *position = netify_request_header_get("position", header_buf);
+char *controller_turtle_chopper_handler(const struct HttpRequest *request) {
+    const char *id = netify_request_header_get("id", request);
+    const char *position = netify_request_header_get("position", request);
 
     cJSON *turtle = state_turle_upsert(TURTLE_CHOPPER, id, position, DIRECTION_NORTH);
+    logify_log(DEBUG, "TEST 1");
 
     cJSON *response = cJSON_CreateObject();
     cJSON *action = cJSON_CreateObject();
@@ -17,22 +18,27 @@ char *controller_turtle_chopper_handler(const char *resource_buf, const char *he
     cJSON_AddItemToObject(response, "action", action);
     cJSON_AddItemToObject(action, "name", action_name);
 
-    cJSON *request_body_json = cJSON_Parse(body_buf);
+    logify_log(DEBUG, "TEST 2");
+    cJSON *request_body_json = cJSON_Parse(request->body);
 
     logify_log(DEBUG, "Request: %s\n", cJSON_Print(request_body_json));
     if (!request_body_json) {
+        logify_log(DEBUG, "ERROR Request: %s\n", request->body);
         char *result = cJSON_Print(response);
         cJSON_Delete(response);
 
         return result;
     }
+    logify_log(DEBUG, "TEST 3");
 
     cJSON *blocks = cJSON_GetObjectItem(request_body_json, "blocks");
     if (turtlefy_blocks_contain_tag(blocks, "minecraft:logs", TURTLE_DIRECTION_FORWARD)) {
-        turtlefy_action_set(turtle, TURTLE_ACTION_CHOPPING);
+        turtlefy_state_set(turtle, TURTLE_STATE_CHOPPING);
     }
 
-    if (blocks && turtlefy_action_get(turtle) == TURTLE_ACTION_CHOPPING) {
+    logify_log(DEBUG, "TEST 4");
+
+    if (blocks && turtlefy_state_get(turtle) == TURTLE_STATE_CHOPPING) {
         if (turtlefy_blocks_contain_tag(blocks, "minecraft:logs", TURTLE_DIRECTION_FORWARD)) {
             cJSON_SetValuestring(action_name, "turtle.dig()");
         } else if (turtlefy_blocks_contain_tag(blocks, "minecraft:leaves", TURTLE_DIRECTION_UP)) {
@@ -42,17 +48,21 @@ char *controller_turtle_chopper_handler(const char *resource_buf, const char *he
             // 2. If previous action was up it means there is no more wood to harvest and set action to replanting
             cJSON_SetValuestring(action_name, "turtle.up()");
         } else {
-            turtlefy_action_set(turtle, TURTLE_ACTION_REPLANTING);
+            turtlefy_state_set(turtle, TURTLE_STATE_REPLANTING);
         }
     }
 
-    if (blocks && turtlefy_action_get(turtle) == TURTLE_ACTION_REPLANTING) {
+    logify_log(DEBUG, "TEST 5");
+
+    if (blocks && turtlefy_state_get(turtle) == TURTLE_STATE_REPLANTING) {
         if (turtlefy_blocks_contain_tag(blocks, "minecraft:dirt", TURTLE_DIRECTION_DOWN)) {
-            turtlefy_action_set(turtle, TURTLE_ACTION_STANDBY);
+            turtlefy_state_set(turtle, TURTLE_STATE_STANDBY);
         } else {
             cJSON_SetValuestring(action_name, "turtle.down()");
         }
     }
+
+    logify_log(DEBUG, "TEST 6");
 
     logify_log(DEBUG, "STATE: %s\n", cJSON_Print(g_state.root));
 
@@ -66,22 +76,7 @@ char *controller_turtle_chopper_handler(const char *resource_buf, const char *he
     // 5. "chopper-check" action is pushed to action stack if turtle of type "chopper" is closest to dedicated block for "tree-chopping"
     // that in in state "tree-growing" and enough time elapsed since last "updated_at"
 
-    // cJSON *root = cJSON_Parse(body_buf);
-    // if (root == NULL) {
-    //     logify_log(ERROR, "Failed to parse json %s", body_buf);
-    // }
-    //
-    // cJSON *actions = cJSON_CreateArray();
-    // cJSON_AddItemToObject(response, "actions", actions);
-    //
-    // cJSON *tags = cJSON_GetObjectItem(root, "tags");
-    // if (tags) {
-    //     cJSON *logs = cJSON_GetObjectItem(tags, "minecraft:logs");
-    //     if (cJSON_IsBool(logs)) {
-    //         cJSON_AddItemToArray(actions, cJSON_CreateString("turtle.dig()"));
-    //         cJSON_AddItemToArray(actions, cJSON_CreateString("turtle.inspect()"));
-    //     }
-    // }
+    logify_log(DEBUG, "TEST 7");
 
     char *result = cJSON_Print(response);
     cJSON_Delete(response);
