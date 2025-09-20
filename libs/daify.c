@@ -103,12 +103,92 @@ char *daify_string_implode(const struct StringArray *string_array, const char *s
     return result_buf;
 }
 
-char *daify_string_array_find_by_substring(const struct StringArray *haystack, const char *needle) { 
+char *daify_string_array_find_by_substring(const struct StringArray *haystack, const char *needle) {
+    if (!haystack || !needle) {
+        return NULL;
+    }
+
     for (int i = 0; i < haystack->count; i++) {
-        if (strstr(haystack->strings[i], needle) == 0) {
-            return haystack->strings[i];
+        if (strstr(haystack->strings[i], needle) != NULL) {
+            int result_len = strlen(haystack->strings[i]) + 1;
+            char *result_buf = malloc(result_len);
+            if (!result_buf) {
+                return NULL;
+            }
+
+            memcpy(result_buf, haystack->strings[i], result_len);
+
+            return result_buf;
         }
     }
 
-    return NULL; 
+    return NULL;
+}
+
+char *daify_string_trim_start(const char *string) {
+    if (!string) {
+        return NULL;
+    }
+
+    for (int i = 0; i < strlen(string); i++) {
+        if ((int)string[i] > 32) { // Characters above space symbol in ascii
+            size_t result_len = strlen(string) - i + 1;
+            char *result_buf = malloc(result_len);
+            if (!result_buf) {
+                return NULL;
+            }
+
+            strncpy(result_buf, &string[i], result_len);
+            return result_buf;
+        }
+    }
+
+    return NULL;
+}
+
+char *daify_string_trim_end(const char *string) {
+    if (!string) {
+        return NULL;
+    }
+
+    for (int i = strlen(string); i > 0; i--) {
+        if ((int)string[i] > 32) { // Characters above space symbol in ascii
+            size_t result_len = i + 1;
+            char *result_buf = malloc(result_len);
+            if (!result_buf) {
+                return NULL;
+            }
+
+            strncpy(result_buf, string, result_len);
+            return result_buf;
+        }
+    }
+
+    return NULL;
+}
+
+char *daify_string_trim(const char *string) {
+    if (!string) {
+        return NULL;
+    }
+
+    size_t string_copy_len = strlen(string) + 1;
+    char *string_copy_buf = malloc(string_copy_len);
+    if (!string_copy_buf) {
+        return NULL;
+    }
+
+    strncpy(string_copy_buf, string, string_copy_len);
+
+    char *result_buf = daify_string_trim_start(string_copy_buf);
+    if (!result_buf) {
+        return NULL;
+    }
+
+    result_buf = daify_string_trim_end(result_buf);
+    if (!result_buf) {
+        return NULL;
+    }
+
+    return result_buf;
 }

@@ -3,6 +3,7 @@
 #include "logify.h"
 
 #include <arpa/inet.h>
+#include <stddef.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -182,7 +183,8 @@ struct HttpRequest *netify_request_read(int connectionfd) {
 
     request->headers = daify_create_string_array();
     for (int i = 1; i < header_lines->count; i++) {
-        if (daify_string_array_push(request->headers, header_lines->strings[i]) == -1) {
+        char *header = daify_string_trim(header_lines->strings[i]);
+        if (daify_string_array_push(request->headers, header) == -1) {
             logify_log(ERROR, "NETIFY::Failed to push header");
         }
     }
@@ -200,11 +202,15 @@ char *netify_request_header_get(const char *target_buf, const struct HttpRequest
         return NULL;
     }
 
-    char *result_buf = daify_string_explode(header, ": ")->strings[1];
+    struct StringArray *header_parts = daify_string_explode(header, ": ");
+    size_t header_value_len = strlen(header_parts->strings[1]) + 1;
+    char *header_value_buf = malloc(header_value_len);
+    memcpy(header_value_buf, header_parts->strings[1], header_value_len);
 
+    free(header_parts);
     free(header);
 
-    return result_buf;
+    return header_value_buf;
 }
 
 int netify_response_send(int connectionfd, int status_code, char *headers_buf, char *body_buf) {
@@ -241,48 +247,4 @@ int netify_response_send(int connectionfd, int status_code, char *headers_buf, c
     logify_log(INFO, "NETIFY::INFO::Sending response with %d bytes. Response:\n%s\n", res_buf_len, res_buf);
 
     return netify_connection_write(connectionfd, res_buf, res_buf_len);
-}
-
-char *netify_request_resource_get_route(const char *resource_buf) {
-    int len = strlen(resource_buf);
-    char *result = (char *)malloc(sizeof(char) * len);
-    if (!result)
-        return NULL;
-
-    /* TODO: Create stringify lib with stringify_explode function that returns StringArray object. Create DataStructify lib for Handling
-     * StringArray */
-    int i, j = 0, space_char_count = 0;
-    for (i = 0; i < len; i++) {
-        if (resource_buf[i] == '\0') {
-            break;
-        }
-
-        if (resource_buf[i] == ' ') {
-            space_char_count++;
-            i++;
-        }
-
-        if (space_char_count == 1) {
-            result[j++] = resource_buf[i];
-        }
-
-        if (space_char_count > 1) {
-            break;
-        }
-    }
-
-    result[j] = '\0';
-
-    return result;
-}
-
-struct HttpRequest *netify_request_to_http_request(const char *resource_buf, const char *header_buf, const char *body_buf) {
-    struct HttpRequest *request;
-
-    struct StringArray *resources = daify_string_explode(resource_buf, " ");
-    for (int i = 0; i < resources->count; i++) {
-        logify_log(DEBUG, "String array value %s", resources->strings[i]);
-    }
-
-    return request;
 }

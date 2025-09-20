@@ -60,8 +60,3 @@ struct HttpRequest *netify_request_read(int connectionfd);
 
 /* Returns buffer with target header value or NULL if header does not exist. */
 char *netify_request_header_get(const char *target_buf, const struct HttpRequest *request);
-
-/* Returns buffer ptr with route path. */
-char *netify_request_resource_get_route(const char *resource_buf);
-
-struct HttpRequest *netify_request_to_http_request(const char *resource_buf, const char *header_buf, const char *body_buf);
