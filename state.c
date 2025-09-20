@@ -1,5 +1,6 @@
 #include "state.h"
 #include "libs/cJSON.h"
+#include "libs/logify.h"
 #include <sys/time.h>
 #include <time.h>
 
@@ -19,13 +20,21 @@ char *get_direction(enum WorldEntityDirection direction) {
         return "up";
     case 6:
         return "down";
+    default:
+        logify_log(WARNING, "STATE::Failed to get direction %d", direction);
+        return "unknown";
     }
 }
 
 char *get_turtle_type(enum TurtleType type) {
     switch (type) {
     case 0:
+        return "unknown";
+    case 1:
         return "chopper";
+    default:
+        logify_log(WARNING, "STATE::Failed to get turtle type %d", type);
+        return "unknown";
     }
 }
 

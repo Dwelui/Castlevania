@@ -10,6 +10,8 @@ struct StringArray {
 };
 
 struct StringArray *daify_create_string_array();
+void daify_delete_string_array(struct StringArray *string_array);
+
 int daify_string_array_push(struct StringArray *string_array, const char *string);
 
 struct StringArray *daify_string_explode(const char *target, const char *separator);

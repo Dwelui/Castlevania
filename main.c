@@ -56,11 +56,13 @@ int main(int argc, char *argv[]) {
         }
 
         g_state.total_requests++;
-        char *response;
+        char *response = NULL;
         if (strcmp(http_request->path, "/api/turtle/chopper/v1") == 0) {
             response = controller_turtle_chopper_handler(http_request);
         } else if (strcmp(http_request->path, "/api/state") == 0) {
             struct HttpResponse *http_response = controller_web_state_index(http_request);
+
+            free(http_response);
         } else {
             logify_log(ERROR, "Unsupported resource path provided: %s", http_request->path);
             continue;

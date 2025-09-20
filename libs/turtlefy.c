@@ -3,14 +3,17 @@
 #include "logify.h"
 #include <string.h>
 
-const char *turtlefy_turtle_state_get_string(enum TurtleState action) {
-    switch (action) {
+const char *turtlefy_turtle_state_get_string(enum TurtleState state) {
+    switch (state) {
     case 0:
         return "standby";
     case 1:
         return "chopping";
     case 2:
         return "replanting";
+    default:
+        logify_log(WARNING, "TURTLEFY::Failed to get string for turtle state %d", state);
+        return "standby";
     }
 }
 
@@ -23,6 +26,7 @@ enum TurtleState turtlefy_turtle_state_enum(const char *state) {
         return TURTLE_STATE_REPLANTING;
     }
 
+    logify_log(WARNING, "TURTLEFY::Failed to get enum for turtle state %s", state);
     return TURTLE_STATE_STANDBY;
 }
 
@@ -36,6 +40,9 @@ const char *turtlefy_turtle_direction_get(enum TurtleDirection direction) {
         return "up";
     case 3:
         return "down";
+    default:
+        logify_log(WARNING, "TURTLEFY::Failed to get turtle direction %d", direction);
+        return "none";
     }
 }
 

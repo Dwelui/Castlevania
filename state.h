@@ -2,7 +2,7 @@
 
 #include "libs/cJSON.h"
 
-enum TurtleType { TURTLE_CHOPPER = 0 };
+enum TurtleType { TURTLE_CHOPPER = 1, TURTLE_UNKNOWN = 0 };
 
 enum WorldEntityDirection {
     DIRECTION_UNKNOWN = 0,

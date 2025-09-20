@@ -19,6 +19,19 @@ struct StringArray *daify_create_string_array() {
     return string_array;
 }
 
+void daify_delete_string_array(struct StringArray *string_array) {
+    if (!string_array) {
+        return;
+    }
+
+    for (size_t i = 0; i < string_array->count; i++) {
+        free(string_array->strings[i]);
+    }
+
+    free(string_array->strings);
+    free(string_array);
+}
+
 int daify_string_array_push(struct StringArray *string_array, const char *string) {
     char *string_copy = (char *)malloc(strlen(string) + 1);
     if (!string_copy)
@@ -68,24 +81,25 @@ struct StringArray *daify_string_explode(const char *target, const char *separat
     string[string_len] = '\0';
 
     daify_string_array_push(string_array, string);
+
     free(string);
+    free(target_copy);
 
     return string_array;
 }
 
 char *daify_string_implode(const struct StringArray *string_array, const char *separator) {
-    int separator_len = strlen(separator);
-    int result_len = string_array->count * (DAIFY_STRING_ARRAY_CAPACITY + separator_len) + 1;
+    size_t separator_len = strlen(separator);
+    size_t result_len = string_array->count * (DAIFY_STRING_ARRAY_CAPACITY + separator_len) + 1;
     char *result_buf = malloc(result_len);
     memset(result_buf, 0, result_len);
 
-    int string_len;
     char *string;
     int j = 0;
-    for (int i = 0; i < string_array->count; i++) {
+    for (size_t i = 0; i < string_array->count; i++) {
         string = string_array->strings[i];
 
-        for (int y = 0; y < strlen(string); y++) {
+        for (size_t y = 0; y < strlen(string); y++) {
             result_buf[j++] = string[y];
         }
 
@@ -93,7 +107,7 @@ char *daify_string_implode(const struct StringArray *string_array, const char *s
             break;
         }
 
-        for (int y = 0; y < strlen(separator); y++) {
+        for (size_t y = 0; y < separator_len; y++) {
             result_buf[j++] = separator[y];
         }
     }
@@ -108,9 +122,9 @@ char *daify_string_array_find_by_substring(const struct StringArray *haystack, c
         return NULL;
     }
 
-    for (int i = 0; i < haystack->count; i++) {
+    for (size_t i = 0; i < haystack->count; i++) {
         if (strstr(haystack->strings[i], needle) != NULL) {
-            int result_len = strlen(haystack->strings[i]) + 1;
+            size_t result_len = strlen(haystack->strings[i]) + 1;
             char *result_buf = malloc(result_len);
             if (!result_buf) {
                 return NULL;
@@ -130,7 +144,7 @@ char *daify_string_trim_start(const char *string) {
         return NULL;
     }
 
-    for (int i = 0; i < strlen(string); i++) {
+    for (size_t i = 0; i < strlen(string); i++) {
         if ((int)string[i] > 32) { // Characters above space symbol in ascii
             size_t result_len = strlen(string) - i + 1;
             char *result_buf = malloc(result_len);

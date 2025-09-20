@@ -10,7 +10,8 @@ char *controller_turtle_chopper_handler(const struct HttpRequest *request) {
     const char *position = netify_request_header_get("position", request);
 
     cJSON *turtle = state_turle_upsert(TURTLE_CHOPPER, id, position, DIRECTION_NORTH);
-    logify_log(DEBUG, "TEST 1");
+
+    logify_log(DEBUG, "STATE: %s\n", cJSON_Print(g_state.root));
 
     cJSON *response = cJSON_CreateObject();
     cJSON *action = cJSON_CreateObject();
@@ -18,8 +19,8 @@ char *controller_turtle_chopper_handler(const struct HttpRequest *request) {
     cJSON_AddItemToObject(response, "action", action);
     cJSON_AddItemToObject(action, "name", action_name);
 
-    logify_log(DEBUG, "TEST 2");
     cJSON *request_body_json = cJSON_Parse(request->body);
+    logify_log(DEBUG, "Request: %s", request->body);
 
     logify_log(DEBUG, "Request: %s\n", cJSON_Print(request_body_json));
     if (!request_body_json) {
@@ -29,6 +30,8 @@ char *controller_turtle_chopper_handler(const struct HttpRequest *request) {
 
         return result;
     }
+
+    return NULL;
     logify_log(DEBUG, "TEST 3");
 
     cJSON *blocks = cJSON_GetObjectItem(request_body_json, "blocks");

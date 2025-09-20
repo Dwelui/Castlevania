@@ -133,7 +133,7 @@ int netify_connection_close(int connectionfd) {
 struct HttpRequest *netify_request_read(int connectionfd) {
     struct HttpRequest *request = malloc(sizeof *request);
 
-    unsigned int req_buf_len = DAIFY_STRING_ARRAY_CAPACITY;
+    int req_buf_len = DAIFY_STRING_ARRAY_CAPACITY;
     char *req_buf = (char *)malloc(req_buf_len + 1);
 
     int result;
@@ -182,7 +182,7 @@ struct HttpRequest *netify_request_read(int connectionfd) {
     strncpy(request->path, resource_line->strings[1], path_len);
 
     request->headers = daify_create_string_array();
-    for (int i = 1; i < header_lines->count; i++) {
+    for (size_t i = 1; i < header_lines->count; i++) {
         char *header = daify_string_trim(header_lines->strings[i]);
         if (daify_string_array_push(request->headers, header) == -1) {
             logify_log(ERROR, "NETIFY::Failed to push header");
@@ -190,9 +190,10 @@ struct HttpRequest *netify_request_read(int connectionfd) {
     }
 
     free(assembled_request_buf);
-    free(request_separator);
-    free(header_lines);
-    free(resource_line);
+    daify_delete_string_array(request_separator);
+    daify_delete_string_array(header_lines);
+    daify_delete_string_array(resource_line);
+
     return request;
 }
 
@@ -207,7 +208,7 @@ char *netify_request_header_get(const char *target_buf, const struct HttpRequest
     char *header_value_buf = malloc(header_value_len);
     memcpy(header_value_buf, header_parts->strings[1], header_value_len);
 
-    free(header_parts);
+    daify_delete_string_array(header_parts);
     free(header);
 
     return header_value_buf;
