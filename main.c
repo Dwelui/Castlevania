@@ -67,9 +67,9 @@ int main(int argc, char *argv[]) {
         if (strcmp(route, "/api/turtle/chopper/v1") == 0) {
             response = controller_turtle_chopper_handler(req_resource_buf, req_header_buf, req_body_buf);
         } else if (strcmp(route, "/api/state") == 0) {
-            struct HttpRequest *request;
+            struct HttpRequest *request = netify_request_to_http_request(req_resource_buf, req_header_buf, req_body_buf);
 
-            response = controller_web_state_index(request);
+            struct HttpResponse *httpResponse = controller_web_state_index(request);
         } else {
             logify_log(ERROR, "Unsupported route provided: %s", route);
             continue;

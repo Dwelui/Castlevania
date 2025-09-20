@@ -29,10 +29,10 @@ enum HttpMethod { METHOD_GET = 1, METHOD_POST = 2 };
 
 struct HttpRequest {
     enum HttpMethod method;
+    const char path[NETIFY_MAX_RESOURCE_SIZE];
 };
 
-struct HttpResponse {
-};
+struct HttpResponse {};
 
 /* Creates TCP socket and binds to provided port. Returns listening fd on
  * success and -1 on error. */
@@ -61,4 +61,6 @@ int netify_request_read(int connectionfd, char *resource_buf, char *header_buf, 
 char *netify_request_header_get(const char *target_buf, const char *header_buf);
 
 /* Returns buffer ptr with route path. */
-char* netify_request_resource_get_route(const char* resource_buf);
+char *netify_request_resource_get_route(const char *resource_buf);
+
+struct HttpRequest *netify_request_to_http_request(const char *resource_buf, const char *header_buf, const char *body_buf);

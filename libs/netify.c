@@ -1,4 +1,5 @@
 #include "netify.h"
+#include "daify.h"
 #include "logify.h"
 
 #include <arpa/inet.h>
@@ -261,4 +262,15 @@ char *netify_request_resource_get_route(const char *resource_buf) {
     result[j] = '\0';
 
     return result;
+}
+
+struct HttpRequest *netify_request_to_http_request(const char *resource_buf, const char *header_buf, const char *body_buf) {
+    struct HttpRequest *request;
+
+    struct StringArray *resources = daify_string_explode(resource_buf, " ");
+    for (int i = 0; i < resources->count; i++) {
+        logify_log(DEBUG, "String array value %s", resources->strings[i]);
+    }
+
+    return request;
 }
