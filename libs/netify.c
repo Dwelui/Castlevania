@@ -11,8 +11,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-const char *http_status_to_string(int code) {
-    switch (code) {
+const char *http_status_string(const struct HttpResponse *response) {
+    switch (response->status) {
     case 200:
         return "OK";
     case 201:
@@ -32,6 +32,7 @@ const char *http_status_to_string(int code) {
     case 501:
         return "Not Implemented";
     default:
+        logify_log(WARNING, "NETIFY::Failed to parse response status %d", response->status);
         return "Unknown Status";
     }
 }
@@ -45,6 +46,14 @@ enum HttpMethod http_method_to_enum(const char *method) {
 
     logify_log(WARNING, "NETIFY::Failed to parse http method to enum %s", method);
     return METHOD_GET;
+}
+
+struct HttpResponse *netify_response_create(const enum HttpStatus status) {
+    struct HttpResponse *response = malloc(sizeof *response);
+    response->status = status;
+    response->headers = daify_create_string_array();
+
+    return response;
 }
 
 int netify_socket_bind(int port) {
@@ -131,9 +140,15 @@ int netify_connection_close(int connectionfd) {
 
 struct HttpRequest *netify_request_read(int connectionfd) {
     struct HttpRequest *request = malloc(sizeof *request);
+    if (!request) {
+        return NULL;
+    }
 
     int req_buf_len = DAIFY_STRING_ARRAY_CAPACITY;
     char *req_buf = (char *)malloc(req_buf_len + 1);
+    if (!req_buf) {
+        return NULL;
+    }
 
     int result;
     struct StringArray *request_chunks = daify_create_string_array();
@@ -213,38 +228,23 @@ char *netify_request_header_get(const char *target_buf, const struct HttpRequest
     return header_value_buf;
 }
 
-int netify_response_send(int connectionfd, int status_code, char *headers_buf, char *body_buf) {
-    char status_code_buffer[20];
-    sprintf(status_code_buffer, "HTTP/1.1 %d %s\r\n", status_code, http_status_to_string(status_code));
+// INFO: MAYBE THE STRANGE CORRUPTION IS FROM ARRAY_STRING_MAX_SIZE
+int netify_response_send(int connectionfd, const struct HttpResponse *response) {
+    char status_buf[20] = {0};
+    sprintf(status_buf, "HTTP/1.1 %d %s", response->status, http_status_string(response));
 
-    /* Padding for header and body gap aswell as last LF at the end of body*/
-    int message_padding_len = 5;
+    struct StringArray *full_response_arr = daify_create_string_array();
+    daify_string_array_push(full_response_arr, status_buf);
+    daify_string_array_merge(full_response_arr, response->headers);
 
-    int res_buf_len = strlen(status_code_buffer) + strlen(headers_buf) + message_padding_len + strlen(body_buf);
-    char *res_buf = (char *)malloc(res_buf_len);
-    int i, j = 0;
+    daify_string_array_push(full_response_arr, "\r\n");
+    daify_string_array_push(full_response_arr, response->body);
+    daify_string_array_push(full_response_arr, "\n");
 
-    for (i = 0; status_code_buffer[i] != '\0'; i++, j++) {
-        res_buf[j] = status_code_buffer[i];
-    }
+    char *response_buf = daify_string_implode(full_response_arr, "\r\n");
+    size_t response_len = strlen(response_buf);
 
-    for (i = 0; headers_buf[i] != '\0'; i++, j++) {
-        res_buf[j] = headers_buf[i];
-    }
+    logify_log(INFO, "NETIFY::INFO::Sending response with %d bytes. Response:\n%s\n", response_len, response_buf);
 
-    for (i = 0; i < message_padding_len / 2; i++) {
-        res_buf[j++] = '\r';
-        res_buf[j++] = '\n';
-    }
-
-    for (i = 0; body_buf[i] != '\0'; i++, j++) {
-        res_buf[j] = body_buf[i];
-    }
-
-    res_buf[j++] = '\n';
-    res_buf[j] = '\0';
-
-    logify_log(INFO, "NETIFY::INFO::Sending response with %d bytes. Response:\n%s\n", res_buf_len, res_buf);
-
-    return netify_connection_write(connectionfd, res_buf, res_buf_len);
+    return netify_connection_write(connectionfd, response_buf, response_len);
 }

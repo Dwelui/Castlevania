@@ -3,43 +3,46 @@
 #include "../libs/netify.h"
 #include "../libs/turtlefy.h"
 #include "../state.h"
+#include <string.h>
 
-// TODO: Move this to agent directory. Because it does not fit the resource controller pattern.
-char *controller_turtle_chopper_handler(const struct HttpRequest *request) {
+struct HttpResponse *controller_turtle_chopper_handler(const struct HttpRequest *request) {
+    struct HttpResponse *response = netify_response_create(HTTP_OK);
+
+    char *response_body_buf = NULL;
+
     const char *id = netify_request_header_get("id", request);
     const char *position = netify_request_header_get("position", request);
 
     cJSON *turtle = state_turle_upsert(TURTLE_CHOPPER, id, position, DIRECTION_NORTH);
 
-    logify_log(DEBUG, "STATE: %s\n", cJSON_Print(g_state.root));
-
-    cJSON *response = cJSON_CreateObject();
+    cJSON *response_json = cJSON_CreateObject();
     cJSON *action = cJSON_CreateObject();
     cJSON *action_name = cJSON_CreateString("none");
-    cJSON_AddItemToObject(response, "action", action);
+    cJSON_AddItemToObject(response_json, "action", action);
     cJSON_AddItemToObject(action, "name", action_name);
 
     cJSON *request_body_json = cJSON_Parse(request->body);
     logify_log(DEBUG, "Request: %s", request->body);
-
-    logify_log(DEBUG, "Request: %s\n", cJSON_Print(request_body_json));
     if (!request_body_json) {
         logify_log(DEBUG, "ERROR Request: %s\n", request->body);
-        char *result = cJSON_Print(response);
-        cJSON_Delete(response);
+        response_body_buf = cJSON_Print(response_json);
+        if (response_body_buf) {
+            strncpy(response->body, response_body_buf, strlen(response_body_buf) + 1);
+        }
 
-        return result;
+        cJSON_Delete(response_json);
+
+        response->status = HTTP_BAD_REQUEST;
+
+        return response;
     }
 
-    return NULL;
-    logify_log(DEBUG, "TEST 3");
+    logify_log(DEBUG, "Request: %s\n", cJSON_Print(request_body_json));
 
     cJSON *blocks = cJSON_GetObjectItem(request_body_json, "blocks");
     if (turtlefy_blocks_contain_tag(blocks, "minecraft:logs", TURTLE_DIRECTION_FORWARD)) {
         turtlefy_state_set(turtle, TURTLE_STATE_CHOPPING);
     }
-
-    logify_log(DEBUG, "TEST 4");
 
     if (blocks && turtlefy_state_get(turtle) == TURTLE_STATE_CHOPPING) {
         if (turtlefy_blocks_contain_tag(blocks, "minecraft:logs", TURTLE_DIRECTION_FORWARD)) {
@@ -55,8 +58,6 @@ char *controller_turtle_chopper_handler(const struct HttpRequest *request) {
         }
     }
 
-    logify_log(DEBUG, "TEST 5");
-
     if (blocks && turtlefy_state_get(turtle) == TURTLE_STATE_REPLANTING) {
         if (turtlefy_blocks_contain_tag(blocks, "minecraft:dirt", TURTLE_DIRECTION_DOWN)) {
             turtlefy_state_set(turtle, TURTLE_STATE_STANDBY);
@@ -65,24 +66,15 @@ char *controller_turtle_chopper_handler(const struct HttpRequest *request) {
         }
     }
 
-    logify_log(DEBUG, "TEST 6");
-
     logify_log(DEBUG, "STATE: %s\n", cJSON_Print(g_state.root));
 
-    // 1. Save turtle state. So the server can keep track of what is happening between requests.
-    // Save id, position, direction, updated_at, actions(a structure stack) (Later will need to save fuel and inventory)
-    // 2. If conditions are meet push action to actions. Action should contain needed data so that if new actions if pushed and later
-    // resolved it can come back to finish previous action. Example need fuel, full inventory, etc...
-    // 3. "chopper-cut" action is pushed to actions stack if turtle of type "chopper" is closest to dedicated block for "tree-chopping" that
-    // is in state "tree-grown"
-    // 4. Dedicated block has "tree-growing", "tree-grown", "tree-felling", "tree-planting"
-    // 5. "chopper-check" action is pushed to action stack if turtle of type "chopper" is closest to dedicated block for "tree-chopping"
-    // that in in state "tree-growing" and enough time elapsed since last "updated_at"
+    response_body_buf = cJSON_Print(response_json);
+    if (response_body_buf) {
+        strncpy(response->body, response_body_buf, strlen(response_body_buf) + 1);
+    }
 
-    logify_log(DEBUG, "TEST 7");
+    cJSON_Delete(blocks);
+    cJSON_Delete(response_json);
 
-    char *result = cJSON_Print(response);
-    cJSON_Delete(response);
-
-    return result;
+    return response;
 }

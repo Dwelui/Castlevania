@@ -14,6 +14,8 @@ void daify_delete_string_array(struct StringArray *string_array);
 
 int daify_string_array_push(struct StringArray *string_array, const char *string);
 
+int daify_string_array_merge(struct StringArray *dest, const struct StringArray *src);
+
 struct StringArray *daify_string_explode(const char *target, const char *separator);
 char *daify_string_implode(const struct StringArray *string_array, const char *separator);
 char *daify_string_array_find_by_substring(const struct StringArray *haystack, const char *needle);

@@ -49,38 +49,32 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        struct HttpRequest *http_request = netify_request_read(connectionfd);
-        if (!http_request) {
+        struct HttpRequest *request = netify_request_read(connectionfd);
+        if (!request) {
+            logify_log(ERROR, "Failed to read request");
             netify_connection_close(connectionfd);
             break;
         }
 
         g_state.total_requests++;
-        char *response = NULL;
-        if (strcmp(http_request->path, "/api/turtle/chopper/v1") == 0) {
-            response = controller_turtle_chopper_handler(http_request);
-        } else if (strcmp(http_request->path, "/api/state") == 0) {
-            struct HttpResponse *http_response = controller_web_state_index(http_request);
-
-            if (http_response) {
-                free(http_response);
-            }
+        struct HttpResponse *response = netify_response_create(HTTP_NOT_FOUND);
+        if (strcmp(request->path, "/api/turtle/chopper/v1") == 0) {
+            response = controller_turtle_chopper_handler(request);
+        } else if (strcmp(request->path, "/api/state") == 0) {
+            response = controller_web_state_index(request);
         } else {
-            logify_log(ERROR, "Unsupported resource path provided: %s", http_request->path);
+            logify_log(ERROR, "Unsupported resource path provided: %s", request->path);
             continue;
         }
 
-        result = netify_response_send(connectionfd, HTTP_OK, "Hello World!", response);
+        result = netify_response_send(connectionfd, response);
         if (result == -1) {
             netify_connection_close(connectionfd);
             break;
         }
 
-        if (response) {
-            free(response);
-        }
-
-        free(http_request);
+        free(response);
+        free(request); // TODO: Create clean up function for structures.
 
         netify_connection_close(connectionfd);
     }

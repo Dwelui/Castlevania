@@ -2,5 +2,5 @@
 
 #include "../libs/netify.h"
 
-char *controller_turtle_chopper_handler(const struct HttpRequest *request);
+struct HttpResponse *controller_turtle_chopper_handler(const struct HttpRequest *request);
 

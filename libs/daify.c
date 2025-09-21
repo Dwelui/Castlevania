@@ -43,6 +43,22 @@ int daify_string_array_push(struct StringArray *string_array, const char *string
     return 1;
 }
 
+int daify_string_array_merge(struct StringArray *dest, const struct StringArray *src) {
+    if (!dest || !src) {
+        return 0;
+    }
+
+    if (src->count == 0) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < src->count; i++) {
+        daify_string_array_push(dest, src->strings[i]);
+    }
+
+    return 1;
+}
+
 struct StringArray *daify_string_explode(const char *target, const char *separator) {
     if (!target || !separator) {
         return NULL;

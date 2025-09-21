@@ -35,7 +35,11 @@ struct HttpRequest {
     char body[NETIFY_MAX_BODY_SIZE];
 };
 
-struct HttpResponse {};
+struct HttpResponse {
+    enum HttpStatus status;
+    struct StringArray *headers;
+    char body[NETIFY_MAX_BODY_SIZE];
+};
 
 /* Creates TCP socket and binds to provided port. Returns listening fd on
  * success and -1 on error. */
@@ -45,18 +49,17 @@ int netify_socket_close(int socketfd);
 
 /* Starts listening and on connection request returns connection fd */
 int netify_connection_accept(int socketfd, struct sockaddr_in *client_sockaddr_in, socklen_t *client_sockaddr_in_len);
-/* Reads into buffer from connection fd. Returns -1 on error and 0 on success.
- */
+/* Reads into buffer from connection fd. Returns -1 on error and 0 on success. */
 int netify_connection_read(int connectionfd, char *buffer, int buffer_len);
 /* Writes from buffer to connection fd. Returns -1 on error and 0 on success. */
 int netify_connection_write(int connectionfd, char *buffer, int buffer_len);
 /* Closes connection fd. Retuns 0 on success. */
 int netify_connection_close(int connectionfd);
 
+struct HttpResponse *netify_response_create(const enum HttpStatus status);
 /* Sends response to connection fd. Returns -1 on error and 0 on success. */
-int netify_response_send(int connectionfd, int status_code, char *headers_buf, char *body_buf);
+int netify_response_send(int connectionfd, const struct HttpResponse *response);
 
 struct HttpRequest *netify_request_read(int connectionfd);
-
 /* Returns buffer with target header value or NULL if header does not exist. */
 char *netify_request_header_get(const char *target_buf, const struct HttpRequest *request);
