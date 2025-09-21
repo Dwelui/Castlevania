@@ -9,8 +9,8 @@ struct StringArray {
     size_t count;
 };
 
-struct StringArray *daify_create_string_array();
-void daify_delete_string_array(struct StringArray *string_array);
+struct StringArray *daify_string_array_create();
+void daify_string_array_delete(struct StringArray *string_array);
 
 int daify_string_array_push(struct StringArray *string_array, const char *string);
 

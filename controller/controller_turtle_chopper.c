@@ -5,6 +5,7 @@
 #include "../state.h"
 #include <string.h>
 
+// TODO: Make the headers to lower case or search into case insensitive
 struct HttpResponse *controller_turtle_chopper_handler(const struct HttpRequest *request) {
     struct HttpResponse *response = netify_response_create(HTTP_OK);
 
@@ -12,6 +13,10 @@ struct HttpResponse *controller_turtle_chopper_handler(const struct HttpRequest 
 
     const char *id = netify_request_header_get("id", request);
     const char *position = netify_request_header_get("position", request);
+
+    logify_log(DEBUG, "Extracted headers id: %s, position %s", id, position);
+
+    return response;
 
     cJSON *turtle = state_turle_upsert(TURTLE_CHOPPER, id, position, DIRECTION_NORTH);
 
@@ -25,11 +30,6 @@ struct HttpResponse *controller_turtle_chopper_handler(const struct HttpRequest 
     logify_log(DEBUG, "Request: %s", request->body);
     if (!request_body_json) {
         logify_log(DEBUG, "ERROR Request: %s\n", request->body);
-        response_body_buf = cJSON_Print(response_json);
-        if (response_body_buf) {
-            strncpy(response->body, response_body_buf, strlen(response_body_buf) + 1);
-        }
-
         cJSON_Delete(response_json);
 
         response->status = HTTP_BAD_REQUEST;

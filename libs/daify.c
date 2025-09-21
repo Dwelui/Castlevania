@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct StringArray *daify_create_string_array() {
+struct StringArray *daify_string_array_create() {
     struct StringArray *string_array = malloc(sizeof *string_array);
     if (!string_array)
         return NULL;
@@ -19,7 +19,7 @@ struct StringArray *daify_create_string_array() {
     return string_array;
 }
 
-void daify_delete_string_array(struct StringArray *string_array) {
+void daify_string_array_delete(struct StringArray *string_array) {
     if (!string_array) {
         return;
     }
@@ -65,7 +65,7 @@ struct StringArray *daify_string_explode(const char *target, const char *separat
     }
 
     char *target_copy = malloc(strlen(target) + 1);
-    struct StringArray *string_array = daify_create_string_array();
+    struct StringArray *string_array = daify_string_array_create();
     if (!target_copy || !string_array) {
         return NULL;
     }

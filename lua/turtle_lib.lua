@@ -4,6 +4,8 @@ function module.get_headers()
 	local x, y, z = gps.locate()
 
 	return {
+        ["content-type"] = "application/json",
+        ["accept"] = "application/json",
 		id = tostring(os.getComputerID()),
 		position = x .. "," .. y .. "," .. z,
 	}

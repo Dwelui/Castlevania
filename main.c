@@ -64,7 +64,6 @@ int main(int argc, char *argv[]) {
             response = controller_web_state_index(request);
         } else {
             logify_log(ERROR, "Unsupported resource path provided: %s", request->path);
-            continue;
         }
 
         result = netify_response_send(connectionfd, response);
@@ -73,8 +72,8 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        free(response);
-        free(request); // TODO: Create clean up function for structures.
+        netify_request_delete(request);
+        netify_response_delete(response);
 
         netify_connection_close(connectionfd);
     }

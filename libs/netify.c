@@ -51,9 +51,29 @@ enum HttpMethod http_method_to_enum(const char *method) {
 struct HttpResponse *netify_response_create(const enum HttpStatus status) {
     struct HttpResponse *response = malloc(sizeof *response);
     response->status = status;
-    response->headers = daify_create_string_array();
+    response->headers = daify_string_array_create();
 
     return response;
+}
+
+void netify_response_delete(struct HttpResponse *response) {
+    if (!response) {
+        return;
+    }
+
+    daify_string_array_delete(response->headers);
+
+    free(response);
+}
+
+void netify_request_delete(struct HttpRequest *request) {
+    if (!request) {
+        return;
+    }
+
+    daify_string_array_delete(request->headers);
+
+    free(request);
 }
 
 int netify_socket_bind(int port) {
@@ -138,8 +158,22 @@ int netify_connection_close(int connectionfd) {
     return 0;
 }
 
-struct HttpRequest *netify_request_read(int connectionfd) {
+struct HttpRequest *netify_request_create() {
     struct HttpRequest *request = malloc(sizeof *request);
+    if (!request) {
+        return NULL;
+    }
+
+    request->headers = daify_string_array_create();
+    if (!request->headers) {
+        return NULL;
+    }
+
+    return request;
+}
+
+struct HttpRequest *netify_request_read(int connectionfd) {
+    struct HttpRequest *request = netify_request_create();
     if (!request) {
         return NULL;
     }
@@ -151,7 +185,7 @@ struct HttpRequest *netify_request_read(int connectionfd) {
     }
 
     int result;
-    struct StringArray *request_chunks = daify_create_string_array();
+    struct StringArray *request_chunks = daify_string_array_create();
     while ((result = netify_connection_read(connectionfd, req_buf, req_buf_len)) != 0) {
         if (result == -1) {
             return NULL;
@@ -169,6 +203,8 @@ struct HttpRequest *netify_request_read(int connectionfd) {
     free(req_buf);
 
     char *assembled_request_buf = daify_string_implode(request_chunks, "");
+
+    logify_log(DEBUG, "Raw request string %s", assembled_request_buf);
 
     struct StringArray *request_separator = daify_string_explode(assembled_request_buf, "\r\n\r\n");
 
@@ -195,7 +231,7 @@ struct HttpRequest *netify_request_read(int connectionfd) {
     resource_line->strings[1][path_len] = '\0';
     strncpy(request->path, resource_line->strings[1], path_len);
 
-    request->headers = daify_create_string_array();
+    request->headers = daify_string_array_create();
     for (size_t i = 1; i < header_lines->count; i++) {
         char *header = daify_string_trim(header_lines->strings[i]);
         if (daify_string_array_push(request->headers, header) == -1) {
@@ -204,9 +240,9 @@ struct HttpRequest *netify_request_read(int connectionfd) {
     }
 
     free(assembled_request_buf);
-    daify_delete_string_array(request_separator);
-    daify_delete_string_array(header_lines);
-    daify_delete_string_array(resource_line);
+    daify_string_array_delete(request_separator);
+    daify_string_array_delete(header_lines);
+    daify_string_array_delete(resource_line);
 
     return request;
 }
@@ -222,18 +258,18 @@ char *netify_request_header_get(const char *target_buf, const struct HttpRequest
     char *header_value_buf = malloc(header_value_len);
     memcpy(header_value_buf, header_parts->strings[1], header_value_len);
 
-    daify_delete_string_array(header_parts);
+    daify_string_array_delete(header_parts);
     free(header);
 
     return header_value_buf;
 }
 
-// INFO: MAYBE THE STRANGE CORRUPTION IS FROM ARRAY_STRING_MAX_SIZE
+// TODO: Fix spacing and new lines in response
 int netify_response_send(int connectionfd, const struct HttpResponse *response) {
     char status_buf[20] = {0};
     sprintf(status_buf, "HTTP/1.1 %d %s", response->status, http_status_string(response));
 
-    struct StringArray *full_response_arr = daify_create_string_array();
+    struct StringArray *full_response_arr = daify_string_array_create();
     daify_string_array_push(full_response_arr, status_buf);
     daify_string_array_merge(full_response_arr, response->headers);
 

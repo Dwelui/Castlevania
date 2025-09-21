@@ -57,9 +57,12 @@ int netify_connection_write(int connectionfd, char *buffer, int buffer_len);
 int netify_connection_close(int connectionfd);
 
 struct HttpResponse *netify_response_create(const enum HttpStatus status);
+void netify_response_delete(struct HttpResponse *response);
 /* Sends response to connection fd. Returns -1 on error and 0 on success. */
 int netify_response_send(int connectionfd, const struct HttpResponse *response);
 
+struct HttpRequest *netify_request_create();
 struct HttpRequest *netify_request_read(int connectionfd);
+void netify_request_delete(struct HttpRequest *request);
 /* Returns buffer with target header value or NULL if header does not exist. */
 char *netify_request_header_get(const char *target_buf, const struct HttpRequest *request);
