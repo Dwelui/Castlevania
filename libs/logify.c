@@ -2,6 +2,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -27,7 +28,7 @@ void logify_log(enum LogStatus status, const char *fmt, ...) {
     struct timeval tv;
     struct tm *tm_info;
     char timestamp[64];
-    char message_buf[4096];
+    char *message_buf = malloc(sizeof(char) * 8192);
     va_list args;
 
     gettimeofday(&tv, NULL);
@@ -39,4 +40,6 @@ void logify_log(enum LogStatus status, const char *fmt, ...) {
     va_end(args);
 
     printf("[%s.%03ld] [%s] %s\n", timestamp, tv.tv_usec / 1000, level, message_buf);
+
+    free(message_buf);
 }

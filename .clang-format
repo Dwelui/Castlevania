@@ -5,3 +5,5 @@ UseTab: Never
 ColumnLimit: 140
 AlignAfterOpenBracket: Align
 BinPackParameters: false
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortBlocksOnASingleLine: Always

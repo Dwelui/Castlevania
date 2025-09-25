@@ -13,6 +13,11 @@ struct StringArray *daify_string_array_create();
 void daify_string_array_delete(struct StringArray *string_array);
 
 int daify_string_array_push(struct StringArray *string_array, const char *string);
+int daify_string_array_push_n(struct StringArray *string_array, const char *string, const size_t len);
+
+char *daify_string_copy(const char *src);
+char *daify_string_copy_n(const char *src, const size_t len);
+int daify_string_concat(char *dest, const size_t dest_cap, const char *src);
 
 int daify_string_array_merge(struct StringArray *dest, const struct StringArray *src);
 

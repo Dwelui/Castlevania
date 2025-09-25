@@ -30,9 +30,9 @@ enum HttpMethod { METHOD_GET = 1, METHOD_POST = 2 };
 
 struct HttpRequest {
     enum HttpMethod method;
-    char path[NETIFY_MAX_RESOURCE_SIZE];
+    char *path;
     struct StringArray *headers;
-    char body[NETIFY_MAX_BODY_SIZE];
+    char *body;
 };
 
 struct HttpResponse {
@@ -52,7 +52,7 @@ int netify_connection_accept(int socketfd, struct sockaddr_in *client_sockaddr_i
 /* Reads into buffer from connection fd. Returns -1 on error and 0 on success. */
 int netify_connection_read(int connectionfd, char *buffer, int buffer_len);
 /* Writes from buffer to connection fd. Returns -1 on error and 0 on success. */
-int netify_connection_write(int connectionfd, char *buffer, int buffer_len);
+int netify_connection_write(int connectionfd, char *buffer, size_t len);
 /* Closes connection fd. Retuns 0 on success. */
 int netify_connection_close(int connectionfd);
 

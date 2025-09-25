@@ -3,8 +3,8 @@
 #include "logify.h"
 
 #include <arpa/inet.h>
-#include <stddef.h>
 #include <netinet/in.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,9 +57,7 @@ struct HttpResponse *netify_response_create(const enum HttpStatus status) {
 }
 
 void netify_response_delete(struct HttpResponse *response) {
-    if (!response) {
-        return;
-    }
+    if (!response) { return; }
 
     daify_string_array_delete(response->headers);
 
@@ -67,9 +65,7 @@ void netify_response_delete(struct HttpResponse *response) {
 }
 
 void netify_request_delete(struct HttpRequest *request) {
-    if (!request) {
-        return;
-    }
+    if (!request) { return; }
 
     daify_string_array_delete(request->headers);
 
@@ -139,8 +135,8 @@ int netify_connection_read(int connectionfd, char *buffer, int buffer_len) {
     return result;
 }
 
-int netify_connection_write(int connectionfd, char *buffer, int buffer_len) {
-    int result = write(connectionfd, buffer, buffer_len);
+int netify_connection_write(int connectionfd, char *buffer, size_t len) {
+    int result = write(connectionfd, buffer, len);
     if (result == -1) {
         logify_log(ERROR, "NETIFY::Failed to write to connection.");
     } else if (result > 0) {
@@ -160,88 +156,90 @@ int netify_connection_close(int connectionfd) {
 
 struct HttpRequest *netify_request_create() {
     struct HttpRequest *request = malloc(sizeof *request);
-    if (!request) {
-        return NULL;
-    }
+    if (!request) { return NULL; }
 
     request->headers = daify_string_array_create();
-    if (!request->headers) {
-        return NULL;
-    }
+    if (!request->headers) { return NULL; }
+
+    request->body = malloc((size_t)NETIFY_MAX_BODY_SIZE);
+    if (!request->body) { return NULL; }
+
+    request->path = malloc((size_t)NETIFY_MAX_RESOURCE_SIZE);
+    if (!request->path) { return NULL; }
 
     return request;
 }
 
 struct HttpRequest *netify_request_read(int connectionfd) {
     struct HttpRequest *request = netify_request_create();
-    if (!request) {
-        return NULL;
-    }
+    if (!request) { return NULL; }
 
-    int req_buf_len = DAIFY_STRING_ARRAY_CAPACITY;
-    char *req_buf = (char *)malloc(req_buf_len + 1);
-    if (!req_buf) {
-        return NULL;
-    }
+    size_t req_buf_len = DAIFY_STRING_ARRAY_CAPACITY;
+    char *req_buf = malloc(req_buf_len + 1);
+    if (!req_buf) { return NULL; }
 
     int result;
     struct StringArray *request_chunks = daify_string_array_create();
     while ((result = netify_connection_read(connectionfd, req_buf, req_buf_len)) != 0) {
+        if (result == -1) { return NULL; }
+
+        result = daify_string_array_push_n(request_chunks, req_buf, req_buf_len);
         if (result == -1) {
+            logify_log(ERROR, "NETIFY::Failed to push request chunk");
             return NULL;
         }
 
-        req_buf[req_buf_len] = '\0';
-        daify_string_array_push(request_chunks, req_buf);
-        memset(req_buf, 0, req_buf_len);
-
-        if (result < req_buf_len) {
-            break;
-        }
+        if (result < req_buf_len) { break; }
     }
 
     free(req_buf);
 
-    char *assembled_request_buf = daify_string_implode(request_chunks, "");
-
-    logify_log(DEBUG, "Raw request string %s", assembled_request_buf);
-
-    struct StringArray *request_separator = daify_string_explode(assembled_request_buf, "\r\n\r\n");
-
-    int body_len = strlen(request_separator->strings[1]) + 1;
-    if (body_len > NETIFY_MAX_BODY_SIZE) {
-        logify_log(ERROR, "NETIFY::Request body too big");
-        body_len = NETIFY_MAX_BODY_SIZE;
+    char *raw_buf = daify_string_implode(request_chunks, "");
+    logify_log(DEBUG, "RAW REQUEST %s", raw_buf);
+    if (!raw_buf) {
+        logify_log(ERROR, "NETIFY::Failed to join request chuncks");
+        return NULL;
     }
 
-    request_separator->strings[1][body_len] = '\0';
-    strncpy(request->body, request_separator->strings[1], body_len);
+    struct StringArray *request_separator = daify_string_explode(raw_buf, "\r\n\r\n");
+    if (!request_separator) {
+        logify_log(ERROR, "NETIFY::Failed to separate headers from body");
+        return NULL;
+    }
 
-    struct StringArray *header_lines = daify_string_explode(request_separator->strings[0], "\n");
+    struct StringArray *header_arr = daify_string_explode(request_separator->strings[0], "\n");
 
-    struct StringArray *resource_line = daify_string_explode(header_lines->strings[0], " ");
+    struct StringArray *resource_line = daify_string_explode(header_arr->strings[0], " ");
     request->method = http_method_to_enum(resource_line->strings[0]);
 
-    int path_len = strlen(resource_line->strings[1]) + 1;
+    int path_len = strlen(resource_line->strings[1]);
     if (path_len > NETIFY_MAX_RESOURCE_SIZE) {
         logify_log(ERROR, "NETIFY::Request resource path too big");
-        path_len = NETIFY_MAX_RESOURCE_SIZE;
+        return NULL;
     }
 
-    resource_line->strings[1][path_len] = '\0';
-    strncpy(request->path, resource_line->strings[1], path_len);
+    request->path = daify_string_copy_n(resource_line->strings[1], path_len);
 
     request->headers = daify_string_array_create();
-    for (size_t i = 1; i < header_lines->count; i++) {
-        char *header = daify_string_trim(header_lines->strings[i]);
-        if (daify_string_array_push(request->headers, header) == -1) {
-            logify_log(ERROR, "NETIFY::Failed to push header");
-        }
+    for (size_t i = 1; i < header_arr->count; i++) {
+        logify_log(DEBUG, "HEADER %s", header_arr->strings[i]);
+        char *header = daify_string_trim(header_arr->strings[i]); // TODO: Probs trim return non terminated string :(
+        if (daify_string_array_push(request->headers, header) == -1) { logify_log(ERROR, "NETIFY::Failed to push header"); }
     }
 
-    free(assembled_request_buf);
+    if (request_separator->count == 2) {
+        size_t body_len = strlen(request_separator->strings[1]);
+        if (body_len > NETIFY_MAX_BODY_SIZE) {
+            logify_log(ERROR, "NETIFY::Request body too big");
+            return NULL;
+        }
+
+        request->body = daify_string_copy_n(request_separator->strings[1], body_len);
+    }
+
+    free(raw_buf);
     daify_string_array_delete(request_separator);
-    daify_string_array_delete(header_lines);
+    daify_string_array_delete(header_arr);
     daify_string_array_delete(resource_line);
 
     return request;
@@ -249,9 +247,7 @@ struct HttpRequest *netify_request_read(int connectionfd) {
 
 char *netify_request_header_get(const char *target_buf, const struct HttpRequest *request) {
     char *header = daify_string_array_find_by_substring(request->headers, target_buf);
-    if (!header) {
-        return NULL;
-    }
+    if (!header) { return NULL; }
 
     struct StringArray *header_parts = daify_string_explode(header, ": ");
     size_t header_value_len = strlen(header_parts->strings[1]) + 1;
